@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filipa Analytics | Inteligência Artificial para Mercados Financeiros</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050816;--card:#0d1325;--primary:#00bfff;--secondary:#ffd700;--text:#fff;--muted:#9aa7bd;--border:rgba(255,255,255,.08);--error:#ff4444;--success:#00ff88}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(0,191,255,.15),transparent 35%),radial-gradient(circle at 80% 30%,rgba(255,215,0,.08),transparent 35%);z-index:-2}
+.grid{position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:50px 50px;z-index:-1}
+.container{width:min(1200px,92%);margin:auto}
+header{position:fixed;top:0;width:100%;z-index:1000;backdrop-filter:blur(20px);background:rgba(5,8,22,.7);border-bottom:1px solid var(--border);transition:all 0.3s}
+.header-scrolled{padding:10px 0;background:rgba(5,8,22,.95)}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
+.logo{font-size:1.5rem;font-weight:900;cursor:pointer}
+.logo span{color:var(--primary)}
+.menu{display:flex;gap:30px;align-items:center}
+.menu a{color:#fff;text-decoration:none;opacity:.8}
+.menu a:hover{opacity:1}
+.btn-login{background:transparent;border:1px solid var(--primary);color:var(--primary);padding:8px 20px;border-radius:100px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.3s}
+.btn-login:hover{background:rgba(0,191,255,.1);transform:translateY(-2px)}
+.hero{min-height:100vh;display:flex;align-items:center;text-align:center}
+.hero-content{width:100%}
+.badge{display:inline-flex;gap:10px;padding:12px 20px;border:1px solid rgba(255,255,255,.1);border-radius:999px;backdrop-filter:blur(20px);margin-bottom:30px}
+.hero h1{font-size:clamp(3rem,8vw,6rem);line-height:1;font-weight:900}
+.hero h1 span{background:linear-gradient(90deg,var(--primary),var(--secondary));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{max-width:850px;margin:30px auto;color:var(--muted);font-size:1.2rem;line-height:1.8}
+.buttons{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:40px}
+.btn{padding:18px 34px;border-radius:14px;text-decoration:none;font-weight:700;transition:.3s;border:none;cursor:pointer;font-family:inherit;font-size:1rem}
+.btn-primary{background:linear-gradient(90deg,var(--primary),#3bc9ff);color:#fff}
+.btn-primary:hover{transform:translateY(-3px)}
+.btn-secondary{border:1px solid rgba(255,255,255,.15);color:#fff;background:transparent}
+.btn-secondary:hover{border-color:var(--primary)}
+.section{padding:120px 0}
+.section-title{text-align:center;margin-bottom:60px}
+.section-title h2{font-size:3rem}
+.section-title p{margin-top:15px;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:25px}
+.card{background:rgba(13,19,37,.8);border:1px solid var(--border);border-radius:24px;padding:30px;backdrop-filter:blur(20px);transition:.3s;opacity:0;transform:translateY(30px)}
+.card.visible{opacity:1;transform:translateY(0)}
+.card:hover{transform:translateY(-8px);border-color:rgba(0,191,255,.3)}
+.card h3{margin-bottom:15px}
+.card p{color:var(--muted);line-height:1.7}
+.pipeline{display:flex;justify-content:center;flex-wrap:wrap;gap:25px;align-items:center}
+.pipeline-item{background:var(--card);padding:30px;min-width:220px;border-radius:20px;border:1px solid var(--border);text-align:center;opacity:0;transform:scale(0.9)}
+.pipeline-item.visible{opacity:1;transform:scale(1);transition:all 0.5s}
+.arrow{font-size:2rem;color:var(--primary);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:0.5}50%{opacity:1}}
+.cta{text-align:center;padding:140px 0}
+.cta-box{background:linear-gradient(135deg,rgba(0,191,255,.1),rgba(255,215,0,.05));border:1px solid rgba(255,255,255,.08);border-radius:30px;padding:70px}
+.cta-box:hover{transform:scale(1.02)}
+.cta h2{font-size:3rem;margin-bottom:20px}
+.cta p{max-width:700px;margin:auto;color:var(--muted);margin-bottom:40px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:25px}
+.stat{text-align:center;background:var(--card);padding:35px;border-radius:20px;transition:.3s;opacity:0;transform:translateY(30px)}
+.stat.visible{opacity:1;transform:translateY(0)}
+.stat:hover{transform:translateY(-5px);border-color:var(--primary)}
+.stat h3{font-size:3rem;color:var(--primary)}
+footer{border-top:1px solid var(--border);text-align:center;padding:40px 0;color:var(--muted)}
+.pricing-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    max-width: 1200px;
+    margin: auto;
+}
+.pricing-card {
+    background: rgba(13, 19, 37, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 30px 24px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.pricing-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(0, 191, 255, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+.pricing-card.popular {
+    border-color: var(--primary);
+    transform: scale(1.02);
+}
+.pricing-card.popular:hover {
+    transform: scale(1.05);
+}
+.pricing-card.master {
+    border-color: rgba(255, 215, 0, 0.3);
+}
+.pricing-card.master .pricing-price {
+    color: var(--secondary);
+}
+.pricing-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, var(--primary), #3bc9ff);
+    color: #fff;
+    padding: 6px 18px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.pricing-header {
+    margin-bottom: 20px;
+}
+.pricing-header h3 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+}
+.pricing-price {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--primary);
+}
+.pricing-price span {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 400;
+}
+.pricing-features {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 24px;
+    flex: 1;
+}
+.pricing-features li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+.pricing-features li:last-child {
+    border-bottom: none;
+}
+.pricing-card .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+}
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+.btn-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--secondary);
+    color: var(--secondary);
+}
+.btn-secondary:hover {
+    background: rgba(255, 215, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Responsivo */
+@media(max-width:1200px){
+  .pricing-cards{grid-template-columns:repeat(2,1fr);max-width:800px}
+  #pricing > div > div{grid-template-columns:repeat(3,1fr)!important}
+  #pricing > div > div > div:nth-child(4),
+  #pricing > div > div > div:nth-child(5){grid-column:span 1}
+}
+@media(max-width:768px){
+  .menu{display:none}
+  .hero h1{font-size:3rem}
+  .section-title h2{font-size:2rem}
+  .cta h2{font-size:2rem}
+  .arrow{display:none}
+  .pricing-cards{grid-template-columns:1fr;max-width:400px}
+  .pricing-card.popular{transform:scale(1)}
+  .pricing-card.popular:hover{transform:scale(1.02)}
+  #pricing > div > div{grid-template-columns:1fr!important}
+  #pricing > div > div > div{transform:none!important}
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div class="grid"></div>
+
+<div class="content">
+    <header id="header">
+        <div class="container nav">
+            <div class="logo" id="logo">FILIPA<span>.</span></div>
+            <nav class="menu">
+                <a href="#tecnologia">Tecnologia</a>
+                <a href="#recursos">Recursos</a>
+                <a href="#analytics">Analytics</a>
+                <button class="btn-login" onclick="window.location.href='login.html'">Entrar</button>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="badge">⚡ Powered by Artificial Intelligence</div>
+            <h1>A IA que<br><span class="gradient-text">Interpreta o Mercado</span></h1>
+            <p>Filipa Analytics utiliza Visão Computacional, Inteligência Artificial e análise de padrões para transformar gráficos complexos em insights operacionais de alta relevância.</p>
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="window.location.href='login.html'">Assinar Agora</button>
+                <a href="#tecnologia" class="btn btn-secondary">Conhecer a Plataforma</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="stats">
+                <div class="stat"><h3 id="stat1">0</h3><p>Monitoramento Inteligente</p></div>
+                <div class="stat"><h3 id="stat2">0</h3><p>Visão Computacional Avançada</p></div>
+                <div class="stat"><h3 id="stat3">0</h3><p>Cloud Native</p></div>
+                <div class="stat"><h3 id="stat4">0</h3><p>+ Escalabilidade</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tecnologia" class="section">
+        <div class="container">
+            <div class="section-title"><h2>Tecnologia Proprietária</h2><p>Uma nova forma de analisar mercados financeiros.</p></div>
+            <div class="pipeline">
+                <div class="pipeline-item">📈<br><br>Gráfico</div>
+                <div class="arrow">→</div>
+                <div class="pipeline-item">👁️<br><br>Visão Computacional</div>
+                <div class="arrow">→</div>
+                <div class="pipeline-item">🧠<br><br>Inteligência Artificial</div>
+                <div class="arrow">→</div>
+                <div class="pipeline-item">⚡<br><br>Insights Operacionais</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="recursos" class="section">
+        <div class="container">
+            <div class="section-title"><h2>Recursos da Plataforma</h2><p>Construída para a próxima geração de traders.</p></div>
+            <div class="cards">
+                <div class="card"><h3>Vision AI</h3><p>Reconhecimento visual de estruturas, tendências e padrões de mercado.</p></div>
+                <div class="card"><h3>Market Replay</h3><p>Revise operações passadas e descubra oportunidades invisíveis.</p></div>
+                <div class="card"><h3>Smart Journal</h3><p>Diário operacional alimentado por Inteligência Artificial.</p></div>
+                <div class="card"><h3>Risk Analytics</h3><p>Análise avançada de risco e comportamento operacional.</p></div>
+                <div class="card"><h3>Smart Alerts</h3><p>Alertas somente quando algo realmente importante acontecer.</p></div>
+                <div class="card"><h3>AI Insights</h3><p>Interpretações claras sobre o comportamento do mercado.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="analytics" class="section">
+        <div class="container">
+            <div class="section-title"><h2>Filipa Analytics</h2><p>A próxima evolução da inteligência aplicada aos mercados financeiros.</p></div>
+            <div class="cards">
+                <div class="card"><h3>📊 Dados</h3><p>Captura e interpretação de informações visuais em tempo real.</p></div>
+                <div class="card"><h3>🧠 IA</h3><p>Modelos especializados para contexto financeiro.</p></div>
+                <div class="card"><h3>⚡ Decisão</h3><p>Transformação de informação em vantagem competitiva.</p></div>
+            </div>
+        </div>
+    </section>
+<!-- PRICING v3.0 Premium -->
+<section id="pricing" style="padding:80px 20px;max-width:1200px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:48px;">
+    <span style="display:inline-block;padding:6px 18px;background:rgba(0,191,255,.1);border:1px solid rgba(0,191,255,.2);border-radius:100px;color:var(--primary);font-size:.8rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Planos e Preços</span>
+    <h2 style="font-size:2.2rem;font-weight:800;margin:16px 0 8px;">Escolha seu poder de análise</h2>
+    <p style="color:var(--muted);font-size:1rem;">5 IAs trabalhando para você. Pague pelo que usar.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;align-items:start;">
+    <!-- FREE -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:28px 20px;text-align:center;transition:all .3s;">
+      <div style="font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">FREE</div>
+      <div style="font-size:2.4rem;font-weight:800;margin-bottom:4px;">R$ 0<span style="font-size:.9rem;color:var(--muted);font-weight:400;">/mês</span></div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:24px;">1 análise por dia</div>
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:left;font-size:.85rem;color:var(--muted);margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Pipeline básico (3 IAs)</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Risk Management simples</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--error);">✕</span> Browser Engine</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--error);">✕</span> Alertas push</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--error);">✕</span> Suporte prioritário</div>
+      </div>
+      <button onclick="window.location.href='login.html'" style="width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-weight:700;cursor:pointer;font-size:.9rem;">Começar Grátis</button>
+    </div>
+
+    <!-- STARTER -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:28px 20px;text-align:center;transition:all .3s;">
+      <div style="font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">STARTER</div>
+      <div style="font-size:2.4rem;font-weight:800;color:var(--primary);margin-bottom:4px;">R$ 59,90<span style="font-size:.9rem;color:var(--muted);font-weight:400;">/mês</span></div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:24px;">10 análises por dia</div>
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:left;font-size:.85rem;color:var(--muted);margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Pipeline completo (5 IAs)</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Risk Management avançado</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--error);">✕</span> Browser Engine</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Alertas push</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--error);">✕</span> Suporte prioritário</div>
+      </div>
+      <a href="https://pay.kiwify.com.br/COLE_AQUI_SEU_LINK_STARTER" target="_blank" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--primary),#0080ff);border:none;border-radius:12px;color:white;font-weight:700;cursor:pointer;font-size:.9rem;box-shadow:0 8px 25px rgba(0,191,255,.3);text-decoration:none;display:block;text-align:center;">Assinar STARTER</a>
+    </div>
+
+    <!-- PRO -->
+    <div style="background:rgba(0,191,255,.04);border:2px solid var(--primary);border-radius:20px;padding:28px 20px;text-align:center;position:relative;transform:scale(1.03);box-shadow:0 20px 60px rgba(0,191,255,.15);">
+      <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:4px 16px;background:linear-gradient(135deg,var(--primary),#0080ff);border-radius:100px;color:white;font-size:.7rem;font-weight:700;letter-spacing:1px;">MAIS POPULAR</div>
+      <div style="font-size:.75rem;font-weight:700;color:var(--primary);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">PRO</div>
+      <div style="font-size:2.4rem;font-weight:800;color:var(--primary);margin-bottom:4px;">R$ 149,90<span style="font-size:.9rem;color:var(--muted);font-weight:400;">/mês</span></div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:24px;">25 análises por dia</div>
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:left;font-size:.85rem;color:var(--muted);margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Pipeline completo (5 IAs)</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Risk Management avançado</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Browser Engine</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Alertas push</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--error);">✕</span> Suporte prioritário</div>
+      </div>
+      <a href="https://pay.kiwify.com.br/COLE_AQUI_SEU_LINK_PRO" target="_blank" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--primary),#0080ff);border:none;border-radius:12px;color:white;font-weight:700;cursor:pointer;font-size:.9rem;box-shadow:0 8px 25px rgba(0,191,255,.3);text-decoration:none;display:block;text-align:center;">Assinar PRO</a>
+
+    </div>
+
+    <!-- ELITE -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:28px 20px;text-align:center;transition:all .3s;">
+      <div style="font-size:.75rem;font-weight:700;color:var(--secondary);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">ELITE</div>
+      <div style="font-size:2.4rem;font-weight:800;color:var(--secondary);margin-bottom:4px;">R$ 299,90<span style="font-size:.9rem;color:var(--muted);font-weight:400;">/mês</span></div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:24px;">60 análises por dia</div>
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:left;font-size:.85rem;color:var(--muted);margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Pipeline completo (5 IAs)</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Risk Management avançado</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Browser Engine</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Alertas push ilimitados</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Suporte prioritário</div>
+      </div>
+      <a href="https://pay.kiwify.com.br/COLE_AQUI_SEU_LINK_ELITE" target="_blank" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--secondary),#ccaa00);border:none;border-radius:12px;color:#000;font-weight:700;cursor:pointer;font-size:.9rem;box-shadow:0 8px 25px rgba(255,215,0,.3);text-decoration:none;display:block;text-align:center;">Assinar ELITE</a>
+    </div>
+
+    <!-- MASTER -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,215,0,.2);border-radius:20px;padding:28px 20px;text-align:center;transition:all .3s;">
+      <div style="font-size:.75rem;font-weight:700;color:var(--secondary);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">MASTER</div>
+      <div style="font-size:2.4rem;font-weight:800;color:var(--secondary);margin-bottom:4px;">R$ 699,90<span style="font-size:.9rem;color:var(--muted);font-weight:400;">/mês</span></div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:24px;">150 análises por dia</div>
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:left;font-size:.85rem;color:var(--muted);margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Pipeline completo (5 IAs)</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Risk Management avançado</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Browser Engine</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Alertas push ilimitados</div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--success);">✓</span> Suporte VIP + API</div>
+      </div>
+      <a href="https://pay.kiwify.com.br/COLE_AQUI_SEU_LINK_MASTER" target="_blank" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--secondary),#ccaa00);border:none;border-radius:12px;color:#000;font-weight:700;cursor:pointer;font-size:.9rem;box-shadow:0 8px 25px rgba(255,215,0,.3);text-decoration:none;display:block;text-align:center;">Assinar MASTER</a>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:32px;">
+    <p style="color:var(--muted);font-size:.85rem;">💡 <strong>7 dias de trial grátis</strong> em qualquer plano. Cancele quando quiser.</p>
+  </div>
+</section>
+
+    <section class="cta">
+        <div class="container">
+            <div class="cta-box">
+                <h2>O Futuro da Análise de Mercado Já Está Observando.</h2>
+                <p>Cadastre-se para receber acesso antecipado à plataforma Filipa Analytics.</p>
+                <button class="btn btn-primary" onclick="window.location.href='login.html'">Assinar Agora</button>
+            </div>
+        </div>
+    </section>
+
+    <footer><div class="container"><p>© 2026 Filipa Analytics • Powered by Mult System</p></div></footer>
+</div>
+
+<script>
+function animarNumeros() {
+    const numeros = [
+        { id: 'stat1', alvo: 24, sufixo: '' },
+        { id: 'stat2', alvo: 100, sufixo: '' },
+        { id: 'stat3', alvo: 100, sufixo: '%' },
+        { id: 'stat4', alvo: 1000, sufixo: '+' }
+    ];
+    numeros.forEach(num => {
+        const elemento = document.getElementById(num.id);
+        if (!elemento) return;
+        let atual = 0;
+        const incremento = num.alvo / 50;
+        const timer = setInterval(() => {
+            atual += incremento;
+            if (atual >= num.alvo) {
+                elemento.innerText = num.alvo + num.sufixo;
+                clearInterval(timer);
+            } else {
+                elemento.innerText = Math.floor(atual) + num.sufixo;
+            }
+        }, 20);
+    });
+}
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+}, { threshold: 0.2 });
+document.querySelectorAll('.card, .stat, .pipeline-item').forEach(el => observer.observe(el));
+
+window.addEventListener('scroll', () => {
+    const header = document.getElementById('header');
+    if (window.scrollY > 50) header.classList.add('header-scrolled');
+    else header.classList.remove('header-scrolled');
+});
+
+document.querySelectorAll('.menu a').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+
+document.getElementById('logo').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+setTimeout(animarNumeros, 500);
+console.log('✅ Filipa Analytics - Landing Page');
+</script>
+</body>
+</html>

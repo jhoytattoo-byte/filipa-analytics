@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filipa Analytics | Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050816;--card:#0d1325;--primary:#00bfff;--secondary:#ffd700;--text:#fff;--muted:#9aa7bd;--border:rgba(255,255,255,.08);--error:#ff4444;--success:#00ff88}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(0,191,255,.15),transparent 35%),radial-gradient(circle at 80% 30%,rgba(255,215,0,.08),transparent 35%);z-index:-2}
+.grid{position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:50px 50px;z-index:-1}
+.login-container{width:100%;max-width:520px;margin:20px;padding:40px;background:var(--card);border:1px solid var(--border);border-radius:32px;backdrop-filter:blur(20px);box-shadow:0 25px 50px -12px rgba(0,0,0,.5)}
+.logo{text-align:center;margin-bottom:24px}
+.logo img{width:80px;height:80px;object-fit:contain;border-radius:16px}
+.logo-text{font-size:1.8rem;font-weight:900;text-align:center;margin-bottom:4px}
+.logo-text span{color:var(--primary)}
+.subtitle-logo{text-align:center;color:var(--muted);font-size:.75rem;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px}
+h1{font-size:1.6rem;margin-bottom:4px;text-align:center}
+.subtitle{text-align:center;color:var(--muted);margin-bottom:24px;font-size:.85rem}
+#sessaoAtiva{display:none;text-align:center;margin-bottom:24px;padding:24px;background:rgba(0,191,255,.08);border:1px solid rgba(0,191,255,.2);border-radius:16px}
+#sessaoAtiva .avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#0080ff);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;font-weight:700;color:#fff}
+#sessaoAtiva p{margin-bottom:4px;font-size:.9rem;color:var(--muted)}
+#sessaoAtiva strong{color:var(--primary);font-weight:700}
+.btn-sair-sessao{margin-top:16px;padding:10px 28px;background:transparent;border:1px solid var(--error);border-radius:10px;color:var(--error);font-weight:700;font-size:.85rem;cursor:pointer;transition:all .3s}
+.btn-sair-sessao:hover{background:rgba(255,68,68,.1);transform:translateY(-2px)}
+#formLogin{display:block}
+#formLogin.hidden{display:none}
+.input-group{margin-bottom:16px}
+.input-group label{display:block;margin-bottom:6px;font-size:.8rem;color:var(--muted);font-weight:500}
+.input-group input{width:100%;padding:12px 14px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:inherit;font-size:.95rem;transition:all .3s}
+.input-group input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(0,191,255,.2)}
+.btn{width:100%;padding:14px;background:linear-gradient(90deg,var(--primary),#3bc9ff);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:all .3s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(0,191,255,.3)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.toggle-mode{text-align:center;margin-top:20px;color:var(--muted);font-size:.85rem}
+.toggle-mode span{color:var(--primary);cursor:pointer;font-weight:600}
+.toggle-mode span:hover{text-decoration:underline}
+.error-msg{color:var(--error);font-size:.85rem;text-align:center;margin-top:12px}
+.success-msg{color:var(--success);font-size:.85rem;text-align:center;margin-top:12px}
+.termos{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;cursor:pointer}
+.termos input[type="checkbox"]{width:18px;height:18px;margin-top:2px;accent-color:var(--primary);flex-shrink:0;cursor:pointer}
+.termos span{font-size:.8rem;color:var(--muted);line-height:1.5}
+.termos a{color:var(--primary);text-decoration:none}
+.termos a:hover{text-decoration:underline}
+.back-link{text-align:center;margin-top:20px}
+.back-link a{color:var(--muted);text-decoration:none;font-size:.8rem}
+.back-link a:hover{color:var(--primary)}
+@media(max-width:768px){.login-container{padding:24px 20px;margin:12px}h1{font-size:1.3rem}}
+</style>
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+
+<div class="grid"></div>
+
+<div class="login-container">
+    <div class="logo">
+        <img src="icon_filipa.PNG" alt="Filipa" onerror="this.style.display='none'">
+        <div class="logo-text">FILIPA<span>.</span></div>
+        <div class="subtitle-logo">DADOS · INTELIGÊNCIA · PERFORMANCE</div>
+    </div>
+
+    <h1 id="formTitle">Entrar</h1>
+    <p class="subtitle" id="formSubtitle">Acesse sua conta Filipa Analytics</p>
+
+    <div id="sessaoAtiva">
+        <div class="avatar" id="avatarLetra">F</div>
+        <p>🔐 Sessão ativa como</p>
+        <p><strong id="usuarioLogado">--</strong></p>
+        <button class="btn-sair-sessao" onclick="sairEVoltar()">🚪 Sair e trocar conta</button>
+    </div>
+
+    <div id="formLogin">
+        <div class="input-group" id="grupoNome" style="display:none;">
+            <label>Nome completo</label>
+            <input type="text" id="nomeCadastro" placeholder="Seu nome completo">
+        </div>
+
+        <div class="input-group">
+            <label>E-mail</label>
+            <input type="email" id="email" placeholder="seu@email.com">
+        </div>
+
+        <div class="input-group" id="grupoTelefone" style="display:none;">
+            <label>Telefone</label>
+            <input type="tel" id="telefoneCadastro" placeholder="(11) 99999-9999">
+        </div>
+
+        <div class="input-group">
+            <label>Senha</label>
+            <input type="password" id="senha" placeholder="Mínimo 6 caracteres">
+        </div>
+
+        <!-- PLANOS v3.0 — PREÇOS ATUALIZADOS -->
+        <div id="grupoPlanos" style="display:none;">
+            <label style="display:block;margin-bottom:8px;font-size:0.8rem;color:var(--muted);font-weight:500;">Selecione seu plano</label>
+            <div class="plano-selector" id="planoSelector" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">
+                <div class="plano-option free selected" data-plano="FREE" onclick="selecionarPlano(this)" style="padding:12px 10px;background:rgba(0,0,0,.2);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .3s;">
+                    <div class="nome" style="font-weight:700;font-size:.85rem;color:var(--muted);">🆓 FREE</div>
+                    <div class="preco" style="font-size:.8rem;color:var(--primary);font-weight:600;">R$ 0,00</div>
+                    <div class="analises" style="font-size:.65rem;color:var(--muted);">1 análise/dia</div>
+                </div>
+                <div class="plano-option starter" data-plano="STARTER" onclick="selecionarPlano(this)" style="padding:12px 10px;background:rgba(0,0,0,.2);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .3s;">
+                    <div class="nome" style="font-weight:700;font-size:.85rem;color:#9aa7bd;">🥉 STARTER</div>
+                    <div class="preco" style="font-size:.8rem;color:var(--primary);font-weight:600;">R$ 59,90/mês</div>
+                    <div class="analises" style="font-size:.65rem;color:var(--muted);">10 análises/dia</div>
+                </div>
+                <div class="plano-option pro" data-plano="PRO" onclick="selecionarPlano(this)" style="padding:12px 10px;background:rgba(0,0,0,.2);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .3s;">
+                    <div class="nome" style="font-weight:700;font-size:.85rem;color:#c0c0c0;">🥈 PRO</div>
+                    <div class="preco" style="font-size:.8rem;color:var(--primary);font-weight:600;">R$ 149,90/mês</div>
+                    <div class="analises" style="font-size:.65rem;color:var(--muted);">25 análises/dia</div>
+                </div>
+                <div class="plano-option elite" data-plano="ELITE" onclick="selecionarPlano(this)" style="padding:12px 10px;background:rgba(0,0,0,.2);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .3s;">
+                    <div class="nome" style="font-weight:700;font-size:.85rem;color:#ffd700;">🥇 ELITE</div>
+                    <div class="preco" style="font-size:.8rem;color:var(--primary);font-weight:600;">R$ 299,90/mês</div>
+                    <div class="analises" style="font-size:.65rem;color:var(--muted);">60 análises/dia</div>
+                </div>
+                <div class="plano-option master" data-plano="MASTER" onclick="selecionarPlano(this)" style="padding:12px 10px;background:rgba(0,0,0,.2);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .3s;grid-column:span 2;">
+                    <div class="nome" style="font-weight:700;font-size:.85rem;color:var(--secondary);">👑 MASTER</div>
+                    <div class="preco" style="font-size:.8rem;color:var(--primary);font-weight:600;">R$ 699,90/mês</div>
+                    <div class="analises" style="font-size:.65rem;color:var(--muted);">150 análises/dia · Suporte VIP + API</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="termos" id="grupoTermos" style="display:none;">
+            <input type="checkbox" id="aceiteTermos">
+            <span>Aceito os <a href="#">Termos de Uso</a> e a <a href="#">Política de Privacidade</a></span>
+        </div>
+
+        <button class="btn" id="submitBtn">Entrar</button>
+        <div id="erroMsg" class="error-msg"></div>
+        <div id="sucessoMsg" class="success-msg"></div>
+
+        <div class="toggle-mode">
+            <span id="toggleModo">Não tem uma conta? <strong>Criar conta</strong></span>
+        </div>
+    </div>
+
+    <div class="back-link">
+        <a href="index.html">← Voltar para a página inicial</a>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+function initApp() {
+    if (typeof window.supabase === 'undefined') {
+        document.getElementById('erroMsg').innerText = 'Erro ao carregar biblioteca.';
+        return;
+    }
+
+    const SUPABASE_URL = 'https://bmpvtxjmbizskyaqyfhe.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtcHZ0eGptYml6c2t5YXF5ZmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NTg0NjMsImV4cCI6MjEwMDIzNDQ2M30.k8Xpdek9iKivYdtDTpve_kcl6Nw2wPmCSL61Ky7Qq-M';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.supabaseClient = supabase;
+
+    let isLogin = true;
+    let planoSelecionado = 'FREE';
+
+    const formTitle = document.getElementById('formTitle');
+    const formSubtitle = document.getElementById('formSubtitle');
+    const submitBtn = document.getElementById('submitBtn');
+    const toggleModo = document.getElementById('toggleModo');
+    const erroMsg = document.getElementById('erroMsg');
+    const sucessoMsg = document.getElementById('sucessoMsg');
+    const emailInput = document.getElementById('email');
+    const senhaInput = document.getElementById('senha');
+    const nomeInput = document.getElementById('nomeCadastro');
+    const telefoneInput = document.getElementById('telefoneCadastro');
+    const aceiteTermos = document.getElementById('aceiteTermos');
+    const formLogin = document.getElementById('formLogin');
+    const sessaoAtiva = document.getElementById('sessaoAtiva');
+    const usuarioLogado = document.getElementById('usuarioLogado');
+    const avatarLetra = document.getElementById('avatarLetra');
+    const grupoNome = document.getElementById('grupoNome');
+    const grupoTelefone = document.getElementById('grupoTelefone');
+    const grupoPlanos = document.getElementById('grupoPlanos');
+    const grupoTermos = document.getElementById('grupoTermos');
+
+    window.selecionarPlano = function(el) {
+        document.querySelectorAll('.plano-option').forEach(p => {
+            p.classList.remove('selected');
+            p.style.borderColor = 'var(--border)';
+            p.style.background = 'rgba(0,0,0,.2)';
+        });
+        el.classList.add('selected');
+        el.style.borderColor = 'var(--primary)';
+        el.style.background = 'rgba(0,191,255,.08)';
+        planoSelecionado = el.dataset.plano;
+    };
+
+    window.sairEVoltar = async function() {
+        await supabase.auth.signOut();
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
+    };
+
+    function toggleModoForm() {
+        isLogin = !isLogin;
+        if (isLogin) {
+            formTitle.innerText = 'Entrar';
+            formSubtitle.innerText = 'Acesse sua conta Filipa Analytics';
+            submitBtn.innerText = 'Entrar';
+            toggleModo.innerHTML = 'Não tem uma conta? <strong>Criar conta</strong>';
+            grupoNome.style.display = 'none';
+            grupoTelefone.style.display = 'none';
+            grupoPlanos.style.display = 'none';
+            grupoTermos.style.display = 'none';
+        } else {
+            formTitle.innerText = 'Criar Conta';
+            formSubtitle.innerText = 'Cadastre-se e comece a usar';
+            submitBtn.innerText = 'Cadastrar';
+            toggleModo.innerHTML = 'Já tem uma conta? <strong>Entrar</strong>';
+            grupoNome.style.display = 'block';
+            grupoTelefone.style.display = 'block';
+            grupoPlanos.style.display = 'block';
+            grupoTermos.style.display = 'block';
+        }
+        erroMsg.innerText = '';
+        sucessoMsg.innerText = '';
+        emailInput.value = '';
+        senhaInput.value = '';
+        nomeInput.value = '';
+        telefoneInput.value = '';
+        aceiteTermos.checked = false;
+    }
+
+    async function fazerLogin(email, senha) {
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: senha
+            });
+
+            if (error) {
+                erroMsg.innerText = 'E-mail ou senha incorretos.';
+                console.error('Erro login:', error);
+                return false;
+            }
+
+            if (data && data.session) {
+                console.log('✅ Login OK! Redirecionando...');
+                sucessoMsg.innerText = '✅ Login realizado! Redirecionando...';
+                setTimeout(() => window.location.replace('dashboard.html'), 1500);
+                return true;
+            }
+
+            return false;
+        } catch (err) {
+            console.error('[Login] Erro:', err);
+            erroMsg.innerText = 'Erro de conexão.';
+            return false;
+        }
+    }
+
+    async function fazerCadastro(email, senha) {
+        const nome = nomeInput.value.trim();
+        const telefone = telefoneInput.value.trim();
+
+        if (!nome) { erroMsg.innerText = 'Digite seu nome completo'; return false; }
+        if (!telefone) { erroMsg.innerText = 'Digite seu telefone'; return false; }
+        if (senha.length < 6) { erroMsg.innerText = 'Senha deve ter no mínimo 6 caracteres'; return false; }
+        if (!email.includes('@') || !email.includes('.')) { erroMsg.innerText = 'Digite um e-mail válido'; return false; }
+        if (!aceiteTermos.checked) { erroMsg.innerText = 'Aceite os Termos de Uso'; return false; }
+
+        try {
+            console.log('[Cadastro] Criando:', email, '| Plano:', planoSelecionado);
+
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: senha,
+                options: {
+                    data: {
+                        nome: nome,
+                        telefone: telefone,
+                        plano: planoSelecionado,  // FREE, STARTER, PRO, ELITE, MASTER
+                        status: 'ativo'
+                    }
+                }
+            });
+
+            if (error) {
+                if (error.message.includes('already registered')) {
+                    erroMsg.innerText = 'E-mail já cadastrado. Faça login.';
+                } else {
+                    erroMsg.innerText = error.message;
+                }
+                return false;
+            }
+
+            if (!data.user) {
+                erroMsg.innerText = 'Erro ao criar usuário';
+                return false;
+            }
+
+            console.log('[Cadastro] Auth OK, ID:', data.user.id);
+
+            // Salva na tabela profiles (plano em maiúsculo, compatível com rate limit)
+            const { error: err2 } = await supabase.from('profiles').insert({
+                id: data.user.id,
+                email: email,
+                nome: nome,
+                plan: planoSelecionado,  // ← maiúsculo, compatível com rateLimitMiddleware
+                plan_status: 'active',
+                role: 'user',
+                created_at: new Date().toISOString()
+            });
+            if (err2) console.warn('Erro profiles:', err2);
+
+            console.log('[Cadastro] ✅ Salvo!');
+            sucessoMsg.innerText = '✅ Cadastro realizado! Faça seu login.';
+            setTimeout(() => toggleModoForm(), 1500);
+            return true;
+
+        } catch (err) {
+            console.error('[Cadastro] Erro:', err);
+            erroMsg.innerText = 'Erro de conexão.';
+            return false;
+        }
+    }
+
+    submitBtn.onclick = async function() {
+        erroMsg.innerText = '';
+        sucessoMsg.innerText = '';
+
+        const email = emailInput.value.trim();
+        const senha = senhaInput.value;
+
+        if (!email || !senha) {
+            erroMsg.innerText = 'Preencha todos os campos';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Aguarde...';
+
+        if (isLogin) {
+            await fazerLogin(email, senha);
+        } else {
+            await fazerCadastro(email, senha);
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.innerText = isLogin ? 'Entrar' : 'Cadastrar';
+    };
+
+    toggleModo.addEventListener('click', toggleModoForm);
+
+    async function verificarSessao() {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session) {
+            const nome = session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Usuário';
+            sessaoAtiva.style.display = 'block';
+            usuarioLogado.textContent = session.user.email;
+            avatarLetra.textContent = nome.charAt(0).toUpperCase();
+            formLogin.classList.add('hidden');
+            formTitle.innerText = 'Sessão Ativa';
+            formSubtitle.innerText = 'Você já está logado';
+        } else {
+            sessaoAtiva.style.display = 'none';
+            formLogin.classList.remove('hidden');
+            formTitle.innerText = 'Entrar';
+            formSubtitle.innerText = 'Acesse sua conta Filipa Analytics';
+        }
+    }
+
+    verificarSessao();
+    console.log('✅ Login v12.0 carregado');
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>

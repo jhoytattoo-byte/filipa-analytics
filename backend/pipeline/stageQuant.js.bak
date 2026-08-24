@@ -1,0 +1,68 @@
+// ============================================================
+// PIPELINE — STAGE QUANT v18.2 (CORRIGIDO)
+// ============================================================
+// Localização: backend/pipeline/stageQuant.js
+// ============================================================
+
+const quantEngine = require('../adapters/quantAdapter');  // ← MUDOU!
+const logger = require('../utils/logger');
+
+async function execute(visao, requestId) {
+    try {
+        logger.info('[Quant] Calculando indicadores...', { requestId });
+
+        // Passa apenas os candles (array)
+        const candlesInput = visao.candles || [];
+        
+        // Log do que está sendo passado
+        if (Array.isArray(candlesInput)) {
+            console.log(`[StageQuant] Passando ${candlesInput.length} candles (array) para o Quant`);
+        } else if (candlesInput && typeof candlesInput === 'object') {
+            console.log(`[StageQuant] Passando objeto com candles para o Quant:`, Object.keys(candlesInput));
+        } else {
+            console.warn(`[StageQuant] ⚠️ candlesInput é ${typeof candlesInput}:`, candlesInput);
+        }
+
+        // ⚠️ IMPORTANTE: AGORA COM AWAIT!
+        const result = await quantEngine.calculate(candlesInput);
+
+        // Verifica se o resultado é válido
+        if (!result || typeof result !== 'object') {
+            console.error('[StageQuant] ❌ Resultado inválido do Quant:', result);
+            throw new Error('Quant retornou resultado inválido');
+        }
+
+        // Log detalhado do resultado
+        console.log(`[StageQuant] ✅ Quant retornou: score=${result.score}, confidence=${result.confidence}, rsi=${result.rsi}, validos=${result.candles_validos}, fonte=${result.fonte || 'desconhecida'}`);
+
+        // Log mais detalhado se houver fatores
+        if (result.fatores && result.fatores.length > 0) {
+            console.log(`[StageQuant] 📊 Fatores: ${result.fatores.join(', ')}`);
+        }
+
+        logger.info(`[Quant] OK — Score: ${result.score}, Confiança: ${result.confidence}%, RSI: ${result.rsi || 'N/A'}, Fonte: ${result.fonte || 'desconhecida'}`, { requestId });
+
+        return result;
+
+    } catch (error) {
+        console.error(`[StageQuant] ❌ Erro no Quant: ${error.message}`);
+        console.error(`[StageQuant] Stack:`, error.stack);
+        
+        logger.error(`[Quant] Falhou: ${error.message}`, { requestId });
+        
+        // Retorna um fallback para não quebrar o pipeline
+        return {
+            score: 0,
+            confidence: 20,
+            rsi: 50,
+            candles_validos: 0,
+            direcao: 'NEUTRO',
+            forca: 'FRACA',
+            fatores: ['erro_no_quant'],
+            fonte: 'erro',
+            erro: error.message
+        };
+    }
+}
+
+module.exports = { execute };
