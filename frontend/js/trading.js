@@ -9,12 +9,37 @@ const Trading = {
 
     init() {
         this.ensureUser();
-        this.updateAllGreetings();
+        this.updateAllGreetings(); // Agora essa função EXISTE e vai funcionar!
         this.renderTrades();
         this.updateStats();
         this.updateMoodUI();
         this.startLiveGreeting();
         console.log('[Trading] v7.0 inicializado - conexao emocional ativa');
+    },
+
+    // 🔥 NOVAS FUNÇÕES ADICIONADAS PARA CORRIGIR OS ERROS
+    updateAllGreetings() {
+        // Atualiza todas as saudações do site de uma vez
+        this.updateGreeting();
+        this.updateTopGreeting();
+    },
+
+    updateGreeting() {
+        const el = document.getElementById('tradingGreeting');
+        if (el) {
+            const hora = new Date().getHours();
+            const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+            el.textContent = `${saudacao}, Trader!`;
+        }
+    },
+
+    updateTopGreeting() {
+        const el = document.getElementById('topGreeting');
+        if (el) {
+            const hora = new Date().getHours();
+            const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+            el.textContent = `${saudacao}, Contato.multsystem!`;
+        }
     },
 
     // ============================================================
