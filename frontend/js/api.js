@@ -4,7 +4,7 @@
 
 const API = {
     // URL do backend local
-    baseUrl: 'http://localhost:3000',
+   baseUrl: 'https://filipa-analytics.onrender.com',
 
     online: false,
 
