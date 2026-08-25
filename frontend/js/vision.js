@@ -1,11 +1,11 @@
-const Vision = {
-    currentImageBlob: null,
-    currentImageBase64: null,
-    isAnalyzing: false,
-    audioContext: null,
-    browserEngine: { isRunning: false, url: null, lastExtract: null },
-    API_URL: 'http://localhost:3000',
-    lastAnalysis: null,
+   const Vision = {
+       currentImageBlob: null,
+       currentImageBase64: null,
+       isAnalyzing: false,
+       audioContext: null,
+       browserEngine: { isRunning: false, url: null, lastExtract: null },
+       API_URL: 'https://filipa-analytics.onrender.com', // <--- CORRIGIDO!
+       lastAnalysis: null,
 
     init() {
         this.setupPaste();
