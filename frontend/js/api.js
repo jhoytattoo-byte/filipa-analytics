@@ -35,7 +35,6 @@ const API = {
         }
     },
 
-    // Envia imagem como JSON (base64) para /api/analyze
     async analyzeImage(base64Image) {
         try {
             const res = await fetch(`${this.baseUrl}/api/analyze`, {
@@ -44,7 +43,7 @@ const API = {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    image: base64Image.split(',')[1]  // Remove "data:image/png;base64,"
+                    image: base64Image.split(',')[1]
                 }),
                 mode: 'cors'
             });
@@ -54,7 +53,7 @@ const API = {
                 throw new Error(errorData.error || `HTTP ${res.status}`);
             }
 
-            return await res.json();  // Retorna { success: true, data: {...} }
+            return await res.json();
 
         } catch (e) {
             throw new Error(`Erro na análise: ${e.message}`);
