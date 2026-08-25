@@ -7,7 +7,7 @@
        API_URL: 'https://filipa-analytics.onrender.com', // <--- CORRIGIDO!
        lastAnalysis: null,
 
-    init() {
+         init() {
         this.setupPaste();
         this.setupFileInput();
         this.setupDragDrop();
@@ -15,20 +15,29 @@
         this.setupLegacyBrowser();
         this.initAudio();
         this.checkBackendStatus();
+        this.wakeUpBackend(); // 👈 CHAMADA ÚNICA E CORRETA
         console.log('Vision v14.8d inicializado');
     },
 
+    // 🚨 NOVA FUNÇÃO: Acordar o servidor
+    async wakeUpBackend() {
+        try {
+            console.log('[Vision] Tentando acordar o backend...');
+            await fetch(this.API_URL + '/api/health');
+        } catch (e) {
+            // Se falhar, tenta novamente em 10 segundos
+            setTimeout(() => this.wakeUpBackend(), 10000);
+        }
+    },
     initAudio() {
         try { this.audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
         catch (e) { console.log('AudioContext nao disponivel'); }
     },
 
-    async checkBackendStatus() {
+     async checkBackendStatus() {
         try {
-            const res = await fetch(this.API_URL + '/api/health', { 
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            });
+            // REMOVIDO o header 'Content-Type' que causava o erro de preflight
+            const res = await fetch(this.API_URL + '/api/health'); 
             const data = await res.json();
             if (data.success) {
                 this.updateBackendStatus(true, data.engine === 'running');
@@ -39,8 +48,36 @@
             console.log('Backend offline:', e.message);
             this.updateBackendStatus(false, false);
         }
-        setTimeout(() => this.checkBackendStatus(), 5000);
+        // CORRIGIDO: Aumentado de 5s para 15s (para dar tempo do servidor acordar)
+        setTimeout(() => this.checkBackendStatus(), 15000);
     },
+    async checkBackendStatus() {
+        try {
+            const res = await fetch(this.API_URL + '/api/health'); 
+            const data = await res.json();
+            if (data.success) {
+                this.updateBackendStatus(true, data.engine === 'running');
+            } else {
+                this.updateBackendStatus(false, false);
+            }
+        } catch (e) {
+            console.log('Backend offline:', e.message);
+            this.updateBackendStatus(false, false);
+        }
+        setTimeout(() => this.checkBackendStatus(), 15000);
+    },
+
+    // 👇 COLE AQUI, LOGO APÓS A VÍRGULA ACIMA 👇
+    async wakeUpBackend() {
+        try {
+            await fetch(this.API_URL + '/api/health'); // Sem headers
+            console.log('[Vision] Backend acordado!');
+        } catch (e) {
+            console.log('[Vision] Servidor dormindo, tentando novamente em 10s...');
+            setTimeout(() => this.wakeUpBackend(), 10000);
+        }
+    },
+    // 👆 TERMINA AQUI 👆
 
     updateBackendStatus(isOnline, engineRunning) {
         const statusEl = document.getElementById('apiStatus');
@@ -196,16 +233,17 @@
     },
 
     carregarImagem(blob) {
+        if (!blob) return;
         this.currentImageBlob = blob;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = function (e) {
             this.currentImageBase64 = e.target.result;
             const img = document.getElementById('previewImg');
             if (img) img.src = e.target.result;
             document.getElementById('imagePreview').classList.add('active');
             document.getElementById('btnAnalyze').disabled = false;
             this.mostrarStatus('success', 'Imagem carregada!');
-        };
+        }.bind(this);
         reader.onerror = () => this.mostrarStatus('error', 'Erro ao ler imagem');
         reader.readAsDataURL(blob);
     },
@@ -224,7 +262,7 @@
     // ============================================================
     // ANALISAR - v14.8d CORRIGIDO (Probabilidades)
     // ============================================================
-    async analisar() {
+    analisar: async function () {
         if (!this.currentImageBase64) { 
             this.mostrarStatus('error', 'Nenhuma imagem carregada'); 
             return; 
@@ -238,16 +276,18 @@
 
         try {
             this.mostrarProgresso(true, 30, 'Enviando para analise...');
-          const res = await fetch(this.API_URL + '/api/analyze', {
-    method: 'POST', 
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-        image: this.currentImageBase64.split(',')[1], 
-        market_type: document.getElementById('marketType')?.value || 'otc', // ✅ NOVO
-        source: this.browserEngine.lastExtract ? 'browser_engine' : 'manual', 
-        chartData: this.browserEngine.lastExtract?.chart || null 
-    })
-});
+            const marketTypeElement = document.getElementById('marketType');
+            const lastExtract = this.browserEngine && this.browserEngine.lastExtract;
+            const res = await fetch(this.API_URL + '/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: this.currentImageBase64.split(',')[1],
+                    market_type: marketTypeElement ? marketTypeElement.value : 'otc',
+                    source: lastExtract ? 'browser_engine' : 'manual',
+                    chartData: lastExtract && lastExtract.chart ? lastExtract.chart : null
+                })
+            });
 
             this.mostrarProgresso(true, 60, 'Processando...');
             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -453,45 +493,8 @@ if (riskSec && dados.stopLoss !== '--') {
         // 9. Engines status (badge no topo)
         this.renderEnginesStatus(dados.engines);
     },
-// 🔧 BUG FIX v18.0 - Formatação de números por mercado
-formatarNumero(valor, mercado) {
-    if (!valor || valor === '--' || isNaN(valor)) return '--';
-    const num = parseFloat(valor);
-    if (isNaN(num)) return '--';
+
     
-    // B3 (WIN/WDO) - Números inteiros
-    if (mercado && (mercado.includes('b3') || mercado.includes('WIN') || mercado.includes('WDO') || mercado.includes('Índice'))) {
-        return Math.round(num).toLocaleString('pt-BR');
-    }
-    
-    // Forex - 5 casas decimais
-    if (mercado && (mercado.includes('forex') || mercado.includes('EUR') || mercado.includes('USD') || mercado.includes('GBP'))) {
-        return num.toFixed(5).replace('.', ',');
-    }
-    
-    // Crypto - 2 casas decimais
-    if (mercado && (mercado.includes('crypto') || mercado.includes('Bitcoin') || mercado.includes('Ethereum'))) {
-        return num.toFixed(2).replace('.', ',');
-    }
-    
-    // Stocks - 2 casas decimais
-    if (mercado && (mercado.includes('stocks') || mercado.includes('Apple') || mercado.includes('Tesla'))) {
-        return num.toFixed(2).replace('.', ',');
-    }
-    
-    // Commodities - 2 casas decimais
-    if (mercado && (mercado.includes('commodities') || mercado.includes('Ouro') || mercado.includes('Petróleo'))) {
-        return num.toFixed(2).replace('.', ',');
-    }
-    
-    // OTC - 5 casas decimais
-    if (mercado && mercado.includes('otc')) {
-        return num.toFixed(5).replace('.', ',');
-    }
-    
-    // Padrão - 2 casas
-    return num.toFixed(2).replace('.', ',');
-},
 // 🔧 BUG FIX v18.0 - Formatação de números por mercado
 formatarNumero(valor, mercado) {
     if (!valor || valor === '--' || isNaN(valor)) return '--';
