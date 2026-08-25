@@ -144,11 +144,10 @@ const Admin = {
             // 1. Buscar profiles (admins)
             let profiles = [];
             try {
-                const { data, error } = await this.supabase
-                    .from('profiles')
-                    .select('id, email, nome, plano, status, total_analyses, total_trades, profit_total, created_at, updated_at, last_sign_in_at, role')
-                    .order('created_at', { ascending: false });
-
+const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, nome, plano, status, total_trades, profit_total, created_at, updated_at, last_sign_in_at, role')
+    .order('created_at', { ascending: false });
                 if (error) {
                     console.warn('[Admin] ⚠️ Erro profiles:', error.message);
                 } else {
