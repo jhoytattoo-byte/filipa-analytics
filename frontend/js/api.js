@@ -1,20 +1,14 @@
 // ============================================================
 // API v7.3 — Backend no Render (Produção)
 // ============================================================
-
 const API = {
-    // URL do backend no Render
     baseUrl: 'https://filipa-analytics.onrender.com',
     online: false,
 
     async checkStatus() {
         try {
-            const res = await fetch(`${this.baseUrl}/health`, { 
-                method: 'GET',
-                mode: 'cors'
-            });
+            const res = await fetch(`${this.baseUrl}/health`, { method: 'GET', mode: 'cors' });
             this.online = res.ok;
-
             const statusEl = document.getElementById('apiStatus');
             if (statusEl) {
                 statusEl.className = 'api-status ' + (this.online ? 'online' : 'offline');
@@ -22,7 +16,6 @@ const API = {
                     ? '✅ Backend online (Render)' 
                     : '❌ Backend offline em ' + this.baseUrl;
             }
-
             return this.online;
         } catch (e) {
             this.online = false;
@@ -39,22 +32,15 @@ const API = {
         try {
             const res = await fetch(`${this.baseUrl}/api/analyze`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    image: base64Image.split(',')[1]
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Image.split(',')[1] }),
                 mode: 'cors'
             });
-
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 throw new Error(errorData.error || `HTTP ${res.status}`);
             }
-
             return await res.json();
-
         } catch (e) {
             throw new Error(`Erro na análise: ${e.message}`);
         }
@@ -65,5 +51,4 @@ const API = {
         setInterval(() => this.checkStatus(), 5000);
     }
 };
-
 window.API = API;
