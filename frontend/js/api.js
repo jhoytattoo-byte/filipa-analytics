@@ -1,11 +1,10 @@
 // ============================================================
-// API v7.2 — Backend local na porta 3000
+// API v7.3 — Backend no Render (Produção)
 // ============================================================
 
 const API = {
-    // URL do backend local
-   baseUrl: 'https://filipa-analytics.onrender.com',
-
+    // URL do backend no Render
+    baseUrl: 'https://filipa-analytics.onrender.com',
     online: false,
 
     async checkStatus() {
@@ -20,7 +19,7 @@ const API = {
             if (statusEl) {
                 statusEl.className = 'api-status ' + (this.online ? 'online' : 'offline');
                 statusEl.textContent = this.online 
-                    ? '✅ Backend online (localhost:3000)' 
+                    ? '✅ Backend online (Render)' 
                     : '❌ Backend offline em ' + this.baseUrl;
             }
 
