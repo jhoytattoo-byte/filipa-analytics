@@ -1,36 +1,58 @@
 // ============================================================
-// TRADING v7.0 - Filipa Coach com Conexao Emocional Completa
-// Reconhece o trader, reage ao contexto, conecta de verdade
+// TRADING v7.1 - Filipa Coach com Conexao Emocional Completa
+// CORRIGIDO: Todas as funções de saudação foram adicionadas
 // ============================================================
 
 const Trading = {
     currentFilter: 'all',
     greetingTimer: null,
 
+    // ============================================================
+    // INICIALIZAÇÃO
+    // ============================================================
     init() {
         this.ensureUser();
-        this.updateAllGreetings(); // Agora essa função EXISTE e vai funcionar!
+        this.updateAllGreetings();
         this.renderTrades();
         this.updateStats();
         this.updateMoodUI();
         this.startLiveGreeting();
-        console.log('[Trading] v7.0 inicializado - conexao emocional ativa');
+        console.log('[Trading] v7.1 inicializado - conexao emocional ativa');
     },
 
-    // 🔥 NOVAS FUNÇÕES ADICIONADAS PARA CORRIGIR OS ERROS
+    // ============================================================
+    // SAUDAÇÕES (Corrigido: Funções adicionadas)
+    // ============================================================
     updateAllGreetings() {
-        // Atualiza todas as saudações do site de uma vez
         this.updateGreeting();
         this.updateTopGreeting();
     },
 
     updateGreeting() {
-        const el = document.getElementById('tradingGreeting');
-        if (el) {
-            const hora = new Date().getHours();
-            const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
-            el.textContent = `${saudacao}, Trader!`;
-        }
+        const name = this.getUserName();
+        const greetingEl = document.getElementById('filipaGreeting');
+        const messageEl = document.getElementById('filipaMessage');
+        const actionsEl = document.getElementById('filipaActions');
+        const h = new Date().getHours();
+
+        let saudacao = 'Bom dia';
+        if (h >= 12 && h < 18) saudacao = 'Boa tarde';
+        else if (h >= 18) saudacao = 'Boa noite';
+        else if (h < 6) saudacao = 'Boa madrugada';
+
+        const variacoes = [
+            `${saudacao}, ${name}!`,
+            `Oi ${name}!`,
+            `Ola, ${name}!`,
+            `E ai, ${name}!`,
+            `Hey ${name}!`
+        ];
+        const dia = new Date().getDate();
+        const frase = variacoes[dia % variacoes.length];
+
+        if (greetingEl) greetingEl.textContent = frase;
+        if (messageEl) messageEl.textContent = '';
+        if (actionsEl) actionsEl.innerHTML = '';
     },
 
     updateTopGreeting() {
@@ -38,15 +60,22 @@ const Trading = {
         if (el) {
             const hora = new Date().getHours();
             const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
-            el.textContent = `${saudacao}, Contato.multsystem!`;
+            el.textContent = `${saudacao}, ${this.getUserName()}!`;
         }
+    },
+
+    startLiveGreeting() {
+        this.updateAllGreetings();
+        if (this.greetingTimer) clearInterval(this.greetingTimer);
+        this.greetingTimer = setInterval(() => {
+            this.updateAllGreetings();
+        }, 60000); // Atualiza a cada 60 segundos
     },
 
     // ============================================================
     // PERSONALIDADE DA FILIPA - Banco de frases emocional
     // ============================================================
     coach: {
-        // Saudacoes por periodo do dia - com nome do trader
         greetings: {
             morning: n => [
                 `Bom dia, ${n}! 🌅 O mercado acordou e eu tambem. Vamos juntos?`,
@@ -71,7 +100,6 @@ const Trading = {
             ]
         },
 
-        // Mensagens de WIN - celebracao genuina
         winMsgs: n => [
             `AEEEE ${n.toUpperCase()}! NA MOSCA! 🎉🎉🎉`,
             `${n}, VOCE E FERA! 🔥🔥🔥`,
@@ -82,7 +110,6 @@ const Trading = {
             `Perfeito ${n}! ⭐⭐⭐ Excelente leitura!`
         ],
 
-        // Mensagens de LOSS - empatia real, nao so consolo
         lossMsgs: n => [
             `Poxa, ${n}... faz parte. 📚 Respira.`,
             `${n}, mantenha a gestao! 🛡️ A proxima vem.`,
@@ -93,7 +120,6 @@ const Trading = {
             `${n}, voce ta bem? 🫂 Quer uma pausa?`
         ],
 
-        // Mensagens de ausencia - a Filipa sente falta
         absenceMsgs: n => [
             `Sumiu, ${n}? 😢 Faz tempo que nao vejo voce.`,
             `${n}! 🥺 Cadê voce? O mercado ta diferente sem voce.`,
@@ -104,7 +130,6 @@ const Trading = {
             `Onde anda voce, ${n}? 🎯 O mercado nao espera.`
         ],
 
-        // Mensagens de streak positiva - hype genuino
         streakMsgs: (n, count) => [
             `${n}! 🔥🔥🔥 ${count} WINS SEGUIDOS! VOCE E UM MONSTRO!`,
             `INACREDITAVEL ${n.toUpperCase()}! 🚀 ${count} na sequencia!`,
@@ -113,7 +138,6 @@ const Trading = {
             `${n}! 🏆🏆🏆 ${count} wins! Voce ta no flow!`
         ],
 
-        // Mensagens de streak negativa - protecao emocional
         lossStreakMsgs: (n, count) => [
             `${n}... 🚨 ${count} losses. Pare. Respira.`,
             `Ei ${n}, 🛡️ ${count} seguidos. Da uma pausa?`,
@@ -124,7 +148,6 @@ const Trading = {
             `${n}... 🫂 Quer conversar? To aqui.`
         ],
 
-        // Mensagens de meta atingida - celebracao
         goalMsgs: n => [
             `META ATINGIDA ${n.toUpperCase()}! 🎉🎉🎉 PARABENS!`,
             `${n}! 🏆 Voce CRUSHOU a meta! Incrível!`,
@@ -133,7 +156,6 @@ const Trading = {
             `PARABENS ${n.toUpperCase()}! 💰💰💰 Meta no bolso!`
         ],
 
-        // Mensagens de limite de perda - alerta carinhoso
         limitMsgs: n => [
             `${n}! 🚨🚨🚨 LIMITE DE PERDA ATINGIDO! PARE AGORA!`,
             `Ei ${n}, 🛑🛑🛑 Chega por hoje. Proteja sua banca.`,
@@ -147,14 +169,13 @@ const Trading = {
             `${n}! 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨 LIMITE! PARE! AGORA!`
         ],
 
-        // Mood advice - mais emocional
         moodAdvice: {
             calm: '😌 Perfeito! Estado ideal. Voce ta no controle.',
             confident: '😤 Confiança é boa, mas nao vire arrogancia!',
-            anxious: '😰 ANSIEDADE! ${n}, sua taxa cai 40%. Respire fundo!',
-            tired: '😴 CANSADO! ${n}, considera parar por hoje.',
-            frustrated: '😡 FRUSTRAÇÃO! ${n}, PARE AGORA! Nao force!',
-            euphoric: '🤩 EUFORIA! ${n}, cuidado com overtrading!'
+            anxious: '😰 ANSIEDADE! Sua taxa cai 40%. Respire fundo!',
+            tired: '😴 CANSADO! Considera parar por hoje.',
+            frustrated: '😡 FRUSTRAÇÃO! PARE AGORA! Nao force!',
+            euphoric: '🤩 EUFORIA! Cuidado com overtrading!'
         },
 
         getGreeting(name) {
@@ -166,44 +187,17 @@ const Trading = {
             return msgs[Math.floor(Math.random() * msgs.length)];
         },
 
-        getWinMsg(n) {
-            const m = this.winMsgs(n);
-            return m[Math.floor(Math.random() * m.length)];
-        },
-
-        getLossMsg(n) {
-            const m = this.lossMsgs(n);
-            return m[Math.floor(Math.random() * m.length)];
-        },
-
-        getAbsenceMsg(n) {
-            const m = this.absenceMsgs(n);
-            return m[Math.floor(Math.random() * m.length)];
-        },
-
-        getStreakMsg(n, count) {
-            const m = this.streakMsgs(n, count);
-            return m[Math.floor(Math.random() * m.length)];
-        },
-
-        getLossStreakMsg(n, count) {
-            const m = this.lossStreakMsgs(n, count);
-            return m[Math.floor(Math.random() * m.length)];
-        },
-
-        getGoalMsg(n) {
-            const m = this.goalMsgs(n);
-            return m[Math.floor(Math.random() * m.length)];
-        },
-
-        getLimitMsg(n) {
-            const m = this.limitMsgs(n);
-            return m[Math.floor(Math.random() * m.length)];
-        }
+        getWinMsg(n) { return this.winMsgs(n)[Math.floor(Math.random() * this.winMsgs(n).length)]; },
+        getLossMsg(n) { return this.lossMsgs(n)[Math.floor(Math.random() * this.lossMsgs(n).length)]; },
+        getAbsenceMsg(n) { return this.absenceMsgs(n)[Math.floor(Math.random() * this.absenceMsgs(n).length)]; },
+        getStreakMsg(n, count) { return this.streakMsgs(n, count)[Math.floor(Math.random() * this.streakMsgs(n, count).length)]; },
+        getLossStreakMsg(n, count) { return this.lossStreakMsgs(n, count)[Math.floor(Math.random() * this.lossStreakMsgs(n, count).length)]; },
+        getGoalMsg(n) { return this.goalMsgs(n)[Math.floor(Math.random() * this.goalMsgs(n).length)]; },
+        getLimitMsg(n) { return this.limitMsgs(n)[Math.floor(Math.random() * this.limitMsgs(n).length)]; }
     },
 
     // ============================================================
-    // REGISTRO DO TRADER - Com persistencia correta
+    // REGISTRO DO TRADER
     // ============================================================
     ensureUser() {
         let user = JSON.parse(localStorage.getItem('filipa_user') || 'null');
@@ -218,13 +212,11 @@ const Trading = {
             localStorage.setItem('filipa_user', JSON.stringify(user));
             this.showToast(`🎉 Bem-vindo, ${user.name}! Sou a Filipa, sua parceira de trading.`, 'success');
         }
-        // Sincroniza com o state global
         FilipaState.user = user;
         return user;
     },
 
     getUserName() {
-        // Prioridade: Supabase Auth > localStorage > fallback
         if (window.filipaTraderName && window.filipaTraderName !== 'Trader') {
             return window.filipaTraderName;
         }
@@ -233,36 +225,9 @@ const Trading = {
     },
 
     // ============================================================
-    // SAUDACAO VIVA - Atualiza em tempo real, reage ao contexto
+    // TRADES
     // ============================================================
-    updateGreeting() {
-        const name = this.getUserName();
-        const greetingEl = document.getElementById('filipaGreeting');
-        const messageEl = document.getElementById('filipaMessage');
-        const actionsEl = document.getElementById('filipaActions');
-        const h = new Date().getHours();
-
-        // Apenas saudacao pelo nome. Nada mais. Sem emocao. Sem stats.
-        let saudacao = 'Bom dia';
-        if (h >= 12 && h < 18) saudacao = 'Boa tarde';
-        else if (h >= 18) saudacao = 'Boa noite';
-        else if (h < 6) saudacao = 'Boa madrugada';
-
-        const variacoes = [
-            `${saudacao}, ${name}!`,
-            `Oi ${name}!`,
-            `Ola, ${name}!`,
-            `E ai, ${name}!`,
-            `Hey ${name}!`
-        ];
-        const dia = new Date().getDate();
-        const frase = variacoes[dia % variacoes.length];
-
-        if (greetingEl) greetingEl.textContent = frase;
-        if (messageEl) messageEl.textContent = '';
-        if (actionsEl) actionsEl.innerHTML = '';
-    },
-addTrade(e) {
+    addTrade(e) {
         e.preventDefault();
         const name = this.getUserName();
         const trade = {
@@ -279,7 +244,6 @@ addTrade(e) {
         trades.unshift(trade);
         FilipaState.trades = trades;
 
-        // Reacao emocional da Filipa
         if (trade.result === 'WIN') {
             this.showToast(this.coach.getWinMsg(name), 'success');
             this.confetti();
@@ -290,9 +254,11 @@ addTrade(e) {
         document.getElementById('tradeForm').reset();
         this.renderTrades();
         this.updateStats();
-        this.updateAllGreetings(); // Atualiza saudacao com novo contexto
-        Dashboard.updateGoals(FilipaState.getStats());
-        Dashboard.updateWeeklySummary();
+        this.updateAllGreetings();
+        if (typeof Dashboard !== 'undefined') {
+            Dashboard.updateGoals(FilipaState.getStats());
+            Dashboard.updateWeeklySummary();
+        }
     },
 
     deleteTrade(id) {
@@ -303,8 +269,10 @@ addTrade(e) {
             this.renderTrades();
             this.updateStats();
             this.updateAllGreetings();
-            Dashboard.updateGoals(FilipaState.getStats());
-            Dashboard.updateWeeklySummary();
+            if (typeof Dashboard !== 'undefined') {
+                Dashboard.updateGoals(FilipaState.getStats());
+                Dashboard.updateWeeklySummary();
+            }
             this.showToast('Trade removido', 'info');
         }
     },
@@ -331,6 +299,9 @@ addTrade(e) {
 
     filterTrades(f) { this.renderTrades(f); },
 
+    // ============================================================
+    // STATS
+    // ============================================================
     updateStats() {
         const stats = FilipaState.getStats();
         this.setText('winRateDisplay', stats.winRate + '%');
@@ -347,7 +318,7 @@ addTrade(e) {
     setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; },
 
     // ============================================================
-    // MOOD - Estado emocional do trader
+    // MOOD
     // ============================================================
     setMood(mood) {
         FilipaState.mood = mood;
