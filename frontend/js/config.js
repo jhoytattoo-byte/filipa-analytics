@@ -1,35 +1,33 @@
 // ============================================================
-// CONFIG v6.0 — Configurações do Filipa (CORRIGIDO + MELHORADO)
+// CONFIG v6.1 — Configurações do Filipa (PRODUÇÃO - RENDER)
 // ============================================================
-// Correções:
-// - IDs corrigidos para bater com o HTML (apiUrlDisplay, yoloConfigStatus)
-// - Layout moderno com cards e seções organizadas
-// - Novas opções: Meta diária, Limite perda, API keys, Trading defaults
-// - Validação de conexão em tempo real
-// - Feedback visual com toast notifications
+// Correções aplicadas:
+// - Todas as URLs de fallback agora apontam para o Render
+// - Removidas referências hardcodeadas a localhost (127.0.0.1 / 3000)
+// - Endpoint de health padronizado para /health (igual ao api.js)
+// - Modo padrão alterado para 'production'
 // ============================================================
 
 function initConfig() {
-    console.log('⚙️ Inicializando Config v6.0...');
-
+    console.log('⚙️ Inicializando Config v6.1 (Produção)...');
     loadConfigValues();
     setupEventListeners();
     checkYOLOStatus();
-
     // Atualizar status a cada 10s
     setInterval(checkYOLOStatus, 10000);
 }
 
 function loadConfigValues() {
     const config = FilipaState.config;
-
-    // API URL (readonly display)
+    
+    // API URL (readonly display) - Fallback seguro para o Render
     const apiUrlDisplay = document.getElementById('apiUrlDisplay');
-    if (apiUrlDisplay) apiUrlDisplay.textContent = config.apiUrl || 'http://127.0.0.1:8001';
+    const correctApiUrl = config.apiUrl || 'https://filipa-analytics.onrender.com';
+    if (apiUrlDisplay) apiUrlDisplay.textContent = correctApiUrl;
 
-    // Modo
+    // Modo (padrão produção)
     const modeSelect = document.getElementById('modeSelect');
-    if (modeSelect) modeSelect.value = config.mode || 'development';
+    if (modeSelect) modeSelect.value = config.mode || 'production';
 
     // YOLO Status
     updateYOLOStatus('Detectando...', 'checking');
@@ -110,21 +108,21 @@ function setupEventListeners() {
 
 async function checkAPIStatus() {
     const apiUrlDisplay = document.getElementById('apiUrlDisplay');
-    const url = apiUrlDisplay?.textContent?.trim() || 'http://127.0.0.1:8001';
-
+    // Fallback seguro para o Render
+    const url = apiUrlDisplay?.textContent?.trim() || 'https://filipa-analytics.onrender.com';
+    
     updateStatusBadge('🟡 Verificando conexão...', 'checking');
-
+    
     try {
-        const response = await fetch(url + '/api/health', { 
+        const response = await fetch(url + '/health', { 
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
-
+        
         if (response.ok) {
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
             const engineStatus = data.engine === 'running' ? ' + Engine ativo' : '';
-            updateStatusBadge('✅ Backend online' + engineStatus, 'online');
-
+            updateStatusBadge('✅ Backend online (Render)' + engineStatus, 'online');
             if (typeof Alerts !== 'undefined') {
                 Alerts.add('✅ API online: ' + url, 'success');
             }
@@ -144,17 +142,17 @@ async function checkAPIStatus() {
 
 function reconnectAPI() {
     updateStatusBadge('🔄 Reconectando...', 'checking');
-
+    
     // Tentar reconectar WebSocket se existir
     if (window.filipaWS && typeof window.filipaWS.reconnect === 'function') {
         window.filipaWS.reconnect();
     }
-
+    
     // Verificar API novamente após 1s
     setTimeout(() => {
         checkAPIStatus();
     }, 1000);
-
+    
     if (typeof Alerts !== 'undefined') {
         Alerts.add('🔄 Reconectando ao servidor...', 'info');
     }
@@ -163,11 +161,11 @@ function reconnectAPI() {
 function saveAllConfig() {
     const modeSelect = document.getElementById('modeSelect');
     const apiUrlDisplay = document.getElementById('apiUrlDisplay');
-
-    // Coletar valores
+    
+    // Coletar valores (garantindo o fallback do Render)
     const newConfig = {
-        mode: modeSelect?.value || 'development',
-        apiUrl: apiUrlDisplay?.textContent?.trim() || 'http://127.0.0.1:8001',
+        mode: modeSelect?.value || 'production',
+        apiUrl: apiUrlDisplay?.textContent?.trim() || 'https://filipa-analytics.onrender.com',
         dailyGoal: parseFloat(document.getElementById('configDailyGoal')?.value) || 150,
         lossLimit: parseFloat(document.getElementById('configLossLimit')?.value) || 100
     };
@@ -192,35 +190,32 @@ function saveAllConfig() {
     // Atualizar inputs do dashboard (Meta/Limite)
     const dailyGoalInput = document.getElementById('dailyGoal');
     if (dailyGoalInput) dailyGoalInput.value = extraConfig.dailyGoal;
-
+    
     const lossLimitInput = document.getElementById('lossLimit');
     if (lossLimitInput) lossLimitInput.value = extraConfig.lossLimit;
 
     // Feedback
     const modeText = newConfig.mode === 'production' ? 'Produção' : 'Desenvolvimento';
-
     if (typeof Alerts !== 'undefined') {
         Alerts.add('💾 Configurações salvas! Modo: ' + modeText, 'success');
     }
 
     // Atualizar badge de status
     updateStatusBadge('✅ Configurações salvas', 'online');
-
     console.log('[Config] Salvo:', newConfig, extraConfig);
 }
 
 function checkYOLOStatus() {
-    // Simular detecção de YOLO (em produção, verificaria o backend)
     const yoloEl = document.getElementById('yoloConfigStatus');
     if (!yoloEl) return;
 
-    // Verificar se o backend está online
-    const apiUrl = FilipaState.config.apiUrl || 'http://127.0.0.1:8001';
-
-    fetch(apiUrl + '/api/health', { method: 'GET' })
+    // Verificar se o backend está online (Fallback seguro para o Render)
+    const apiUrl = FilipaState.config.apiUrl || 'https://filipa-analytics.onrender.com';
+    
+    fetch(apiUrl + '/health', { method: 'GET' })
         .then(res => {
             if (res.ok) {
-                updateYOLOStatus('✅ Online', 'online');
+                updateYOLOStatus('✅ Online (Render)', 'online');
             } else {
                 updateYOLOStatus('❌ Offline', 'offline');
             }
@@ -233,7 +228,7 @@ function checkYOLOStatus() {
 function updateYOLOStatus(text, status) {
     const yoloEl = document.getElementById('yoloConfigStatus');
     if (!yoloEl) return;
-
+    
     yoloEl.textContent = text;
     yoloEl.style.color = status === 'online' ? '#00ff88' : status === 'offline' ? '#ff4444' : '#ffaa00';
 }
@@ -241,12 +236,11 @@ function updateYOLOStatus(text, status) {
 function updateStatusBadge(text, status) {
     const statusEl = document.getElementById('apiStatus');
     if (!statusEl) return;
-
+    
     statusEl.className = 'api-status ' + status;
     statusEl.textContent = text;
 }
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', initConfig);
-
-console.log('✅ Config v6.0 inicializado');
+console.log('✅ Config v6.1 inicializado (Produção)');
