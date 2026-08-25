@@ -1,5 +1,5 @@
 ﻿const express = require('express');
-const cors = require('cors'); // <-- OBRIGATÓRIO
+const cors = require('cors');
 const path = require('path');
 const config = require('./config/env');
 const logger = require('./utils/logger');
@@ -7,20 +7,33 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 
-// 1. CORS BLINDADO: Permite Vercel, .com.br e localhost
+// 1. CORS BLINDADO: Permite especificamente seus domínios
+const allowedOrigins = [
+    'https://filipa-analytics.vercel.app',
+    'https://www.filipaanalytics.com.br',
+    'https://filipaanalytics.com.br',
+    'http://localhost:3000' // Para testes locais
+];
+
 app.use(cors({
-    origin: '*', // Em produção, você pode trocar '*' por ['https://filipa-analytics.vercel.app', 'https://www.filipaanalytics.com.br']
+    origin: function (origin, callback) {
+        // Permite requisições sem origin (como apps mobile ou Postman) ou se estiver na lista
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Não permitido pelo CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'Accept']
 }));
-app.options('*', cors()); // Garante resposta às requisições de "preflight" do navegador
+app.options('*', cors());
 
 // 2. Parser de JSON
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// ... (o resto do seu server.js continua normal abaixo daqui)
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// ... (mantenha o resto do seu server.js igual, com as rotas /health e /api/health)
 
 // 4. Middleware de Logging e Request ID
 app.use(function(req, res, next) {

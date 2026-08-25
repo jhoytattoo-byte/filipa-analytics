@@ -3,7 +3,14 @@
 // Único admin: contato.multsystem@gmail.com
 // Busca profiles (admins) + usuarios (usuários comuns via login)
 // ============================================================
+// No topo do admin.js
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
+// Substitua pelas suas variáveis reais do Supabase
+const SUPABASE_URL = 'https://bmpvtxjmbizskyaqyfhe.supabase.co';
+const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_AQUI'; 
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const Admin = {
     users: [],
     costs: { groq: 0, deepseek: 0, claude: 0, total: 0 },
