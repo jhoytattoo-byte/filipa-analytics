@@ -34,7 +34,7 @@
         catch (e) { console.log('AudioContext nao disponivel'); }
     },
 
-     async checkBackendStatus() {
+       async checkBackendStatus() {
         try {
             // REMOVIDO o header 'Content-Type' que causava o erro de preflight
             const res = await fetch(this.API_URL + '/api/health'); 
@@ -51,23 +51,7 @@
         // CORRIGIDO: Aumentado de 5s para 15s (para dar tempo do servidor acordar)
         setTimeout(() => this.checkBackendStatus(), 15000);
     },
-    async checkBackendStatus() {
-        try {
-            const res = await fetch(this.API_URL + '/api/health'); 
-            const data = await res.json();
-            if (data.success) {
-                this.updateBackendStatus(true, data.engine === 'running');
-            } else {
-                this.updateBackendStatus(false, false);
-            }
-        } catch (e) {
-            console.log('Backend offline:', e.message);
-            this.updateBackendStatus(false, false);
-        }
-        setTimeout(() => this.checkBackendStatus(), 15000);
-    },
 
-    // 👇 COLE AQUI, LOGO APÓS A VÍRGULA ACIMA 👇
     async wakeUpBackend() {
         try {
             await fetch(this.API_URL + '/api/health'); // Sem headers
@@ -77,7 +61,6 @@
             setTimeout(() => this.wakeUpBackend(), 10000);
         }
     },
-    // 👆 TERMINA AQUI 👆
 
     updateBackendStatus(isOnline, engineRunning) {
         const statusEl = document.getElementById('apiStatus');
