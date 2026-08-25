@@ -1,13 +1,13 @@
-   const Vision = {
-       currentImageBlob: null,
-       currentImageBase64: null,
-       isAnalyzing: false,
-       audioContext: null,
-       browserEngine: { isRunning: false, url: null, lastExtract: null },
-       API_URL: 'https://filipa-analytics.onrender.com', // <--- CORRIGIDO!
-       lastAnalysis: null,
+const Vision = {
+    currentImageBlob: null,
+    currentImageBase64: null,
+    isAnalyzing: false,
+    audioContext: null,
+    browserEngine: { isRunning: false, url: null, lastExtract: null },
+    API_URL: 'https://filipa-analytics.onrender.com',
+    lastAnalysis: null,
 
-         init() {
+    init() {
         this.setupPaste();
         this.setupFileInput();
         this.setupDragDrop();
@@ -15,28 +15,17 @@
         this.setupLegacyBrowser();
         this.initAudio();
         this.checkBackendStatus();
-        this.wakeUpBackend(); // 👈 CHAMADA ÚNICA E CORRETA
         console.log('Vision v14.8d inicializado');
     },
 
-    // 🚨 NOVA FUNÇÃO: Acordar o servidor
-    async wakeUpBackend() {
-        try {
-            console.log('[Vision] Tentando acordar o backend...');
-            await fetch(this.API_URL + '/api/health');
-        } catch (e) {
-            // Se falhar, tenta novamente em 10 segundos
-            setTimeout(() => this.wakeUpBackend(), 10000);
-        }
-    },
     initAudio() {
         try { this.audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
         catch (e) { console.log('AudioContext nao disponivel'); }
     },
 
-       async checkBackendStatus() {
+    // ✅ CORRIGIDO: Verificação com intervalo de 15 segundos (sem headers)
+    async checkBackendStatus() {
         try {
-            // REMOVIDO o header 'Content-Type' que causava o erro de preflight
             const res = await fetch(this.API_URL + '/api/health'); 
             const data = await res.json();
             if (data.success) {
@@ -48,16 +37,15 @@
             console.log('Backend offline:', e.message);
             this.updateBackendStatus(false, false);
         }
-        // CORRIGIDO: Aumentado de 5s para 15s (para dar tempo do servidor acordar)
         setTimeout(() => this.checkBackendStatus(), 15000);
     },
 
+    // ✅ CORRIGIDO: Função única para acordar o servidor
     async wakeUpBackend() {
         try {
-            await fetch(this.API_URL + '/api/health'); // Sem headers
-            console.log('[Vision] Backend acordado!');
+            console.log('[Vision] Tentando acordar o backend...');
+            await fetch(this.API_URL + '/api/health');
         } catch (e) {
-            console.log('[Vision] Servidor dormindo, tentando novamente em 10s...');
             setTimeout(() => this.wakeUpBackend(), 10000);
         }
     },
@@ -215,18 +203,19 @@
         });
     },
 
+    // ✅ CORRIGIDO: this agora funciona corretamente
     carregarImagem(blob) {
         if (!blob) return;
         this.currentImageBlob = blob;
         const reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = (e) => {
             this.currentImageBase64 = e.target.result;
             const img = document.getElementById('previewImg');
             if (img) img.src = e.target.result;
             document.getElementById('imagePreview').classList.add('active');
             document.getElementById('btnAnalyze').disabled = false;
             this.mostrarStatus('success', 'Imagem carregada!');
-        }.bind(this);
+        };
         reader.onerror = () => this.mostrarStatus('error', 'Erro ao ler imagem');
         reader.readAsDataURL(blob);
     },
@@ -243,7 +232,7 @@
     },
 
     // ============================================================
-    // ANALISAR - v14.8d CORRIGIDO (Probabilidades)
+    // ANALISAR - v14.8d CORRIGIDO
     // ============================================================
     analisar: async function () {
         if (!this.currentImageBase64) { 
@@ -278,26 +267,12 @@
             const data = await res.json();
             if (!data.success) throw new Error(data.error);
 
-            // Extrair dados do pipeline FILIPA
             const raw = data.data;
             const decisao = raw.decisao || {};
             const visao = raw.visao || {};
             const quant = raw.quant || {};
             const curador = raw.curador || {};
             const estrategia = decisao.estrategia || {};
-
-            // ============================================================
-            // CORRECAO v14.8d — Probabilidades Visuais
-            // ============================================================
-            // REGRA: A barra da DIRECAO INDICADA e sempre a MAIOR.
-            // NEUTRO: sempre 50/50 (independente da confianca)
-            //
-            // COMPRA 85% -> probBuy=85,  probSell=15  (verde maior)
-            // VENDA  38% -> probBuy=38,  probSell=62  (vermelha maior)
-            // COMPRA 30% -> probBuy=70,  probSell=30  (verde maior)
-            // VENDA  75% -> probBuy=25,  probSell=75  (vermelha maior)
-            // NEUTRO  9% -> probBuy=50,  probSell=50  (ambas iguais)
-            // ============================================================
 
             const c = parseInt(decisao.confianca) || 50;
             const d = decisao.direcao || 'NEUTRO';
@@ -310,38 +285,32 @@
                 probSell = c >= 50 ? c : 100 - c;
                 probBuy = c >= 50 ? 100 - c : c;
             } else {
-                // NEUTRO: sempre 50/50, independente da confianca
                 probBuy = 50;
                 probSell = 50;
             }
 
-            // Montar objeto resultado normalizado
             const resultado = {
                 ativo: visao.ativo || 'N/A',
                 timeframe: visao.timeframe || 'N/A',
                 direcao: d,
                 confianca: c,
                 score: quant.score_final ?? quant.score ?? 0,
-               candles: visao.candles_reais?.length ?? visao.candles?.length ?? visao.candles_extraidos ?? visao.num_candles ?? 0,
+                candles: visao.candles_reais?.length ?? visao.candles?.length ?? visao.candles_extraidos ?? visao.num_candles ?? 0,
                 rsi: quant.rsi ?? visao.rsi ?? '--',
                 tendencia: visao.tendencia || quant.tendencia || 'INDEFINIDA',
                 qualidade: this.calcularQualidade(c, quant.score_final),
                 justificativa: decisao.justificativa || 'Analise concluida.',
                 riscos: decisao.risco_principal || 'Riscos nao identificados.',
-                // Risk Management
                 precoAtual: estrategia.preco_atual || estrategia.preco_entrada || '--',
                 stopLoss: estrategia.stop_loss || '--',
                 takeProfit: estrategia.alvo1 || estrategia.take_profit || '--',
                 rr: this.calcularRR(estrategia.stop_loss, estrategia.alvo1, estrategia.preco_atual),
-                // Probabilidades corrigidas v14.8d
                 probBuy: probBuy,
                 probSell: probSell,
-                // Timing
                 melhorEntrada: estrategia.entrada || 'AGORA',
                 volatilidade: curador.volatilidade || 'Normal',
                 sessao: curador.sessao || this.detectarSessao(),
                 noticias: typeof curador.noticias === 'string' ? curador.noticias : (curador.noticias?.headlines ? curador.noticias.headlines.join(' | ') : 'Sem noticias relevantes'),
-                // Engines
                 engines: {
                     groqVision: { name: 'Groq Vision', status: visao && visao.ativo ? 'online' : 'offline' },
                     quant: { name: 'Quant Engine', status: 'online' },
@@ -352,7 +321,6 @@
 
             this.lastAnalysis = resultado;
 
-            // v14.8f — Registrar custos no backend Admin
             if (data.meta?.costs) {
                 this.registrarCustos(data.meta.costs);
             }
@@ -373,7 +341,7 @@
     },
 
     // ============================================================
-    // EXIBIR RESULTADO - v14.8d
+    // EXIBIR RESULTADO
     // ============================================================
     exibirResultado(dados) {
         const panel = document.getElementById('resultPanel');
@@ -382,15 +350,12 @@
         const agora = new Date().toLocaleTimeString('pt-BR');
         const cor = dados.direcao === 'COMPRA' ? '#00ff88' : dados.direcao === 'VENDA' ? '#ff4444' : '#ffaa00';
 
-        // 1. Mostrar painel
         panel.style.display = 'block'; 
         panel.classList.add('active');
 
-        // 2. Timestamp
         const tsEl = document.getElementById('resultTimestamp');
         if (tsEl) tsEl.textContent = agora;
 
-        // 3. Grid principal (9 cards)
         this.setText('resAtivo', dados.ativo);
         this.setText('resTimeframe', dados.timeframe);
 
@@ -398,12 +363,11 @@
         if (dirEl) dirEl.innerHTML = `<span class="direction-badge ${dados.direcao.toLowerCase()}">${dados.direcao}</span>`;
 
         const confEl = document.getElementById('resConfianca');
-if (confEl) { 
-    // Confiança = probabilidade da DIRECAO indicada
-    const confDisplay = dados.direcao === 'COMPRA' ? dados.probBuy : dados.direcao === 'VENDA' ? dados.probSell : dados.confianca;
-    confEl.textContent = confDisplay + '%'; 
-    confEl.style.color = cor; 
-}
+        if (confEl) { 
+            const confDisplay = dados.direcao === 'COMPRA' ? dados.probBuy : dados.direcao === 'VENDA' ? dados.probSell : dados.confianca;
+            confEl.textContent = confDisplay + '%'; 
+            confEl.style.color = cor; 
+        }
 
         const scoreEl = document.getElementById('resScore');
         if (scoreEl) {
@@ -418,25 +382,19 @@ if (confEl) {
         const qualEl = document.getElementById('resQualidade');
         if (qualEl) qualEl.innerHTML = `<span class="quality-badge ${dados.qualidade}">${dados.qualidade}</span>`;
 
- // 4. Risk Management (se disponivel) - v18.0 com formatação
-const riskSec = document.getElementById('riskSection');
-if (riskSec && dados.stopLoss !== '--') {
-    riskSec.style.display = 'block';
-    
-    //  Pega o mercado selecionado para formatação correta
-    const marketSelect = document.getElementById('marketType');
-    const mercadoSelecionado = marketSelect ? marketSelect.value : 'otc';
-    
-    // Aplica formatação por mercado
-    this.setText('riskPrecoAtual', this.formatarNumero(dados.precoAtual, mercadoSelecionado));
-    this.setText('riskStopLoss', this.formatarNumero(dados.stopLoss, mercadoSelecionado));
-    this.setText('riskTakeProfit', this.formatarNumero(dados.takeProfit, mercadoSelecionado));
-    this.setText('riskRR', dados.rr);
-} else if (riskSec) {
-    riskSec.style.display = 'none';
-}
+        const riskSec = document.getElementById('riskSection');
+        if (riskSec && dados.stopLoss !== '--') {
+            riskSec.style.display = 'block';
+            const marketSelect = document.getElementById('marketType');
+            const mercadoSelecionado = marketSelect ? marketSelect.value : 'otc';
+            this.setText('riskPrecoAtual', this.formatarNumero(dados.precoAtual, mercadoSelecionado));
+            this.setText('riskStopLoss', this.formatarNumero(dados.stopLoss, mercadoSelecionado));
+            this.setText('riskTakeProfit', this.formatarNumero(dados.takeProfit, mercadoSelecionado));
+            this.setText('riskRR', dados.rr);
+        } else if (riskSec) {
+            riskSec.style.display = 'none';
+        }
 
-        // 5. Probabilidades
         const probSec = document.getElementById('probSection');
         if (probSec) {
             probSec.style.display = 'block';
@@ -446,7 +404,6 @@ if (riskSec && dados.stopLoss !== '--') {
             if (ps) { ps.style.width = dados.probSell + '%'; ps.innerHTML = `<span>${dados.probSell}%</span>`; }
         }
 
-        // 6. Timing
         const timingSec = document.getElementById('timingSection');
         if (timingSec) {
             timingSec.style.display = 'grid';
@@ -456,14 +413,12 @@ if (riskSec && dados.stopLoss !== '--') {
             this.setText('timingNews', dados.noticias);
         }
 
-        // 7. Analise textual
         const analiseEl = document.getElementById('analysisText');
         if (analiseEl) {
             analiseEl.style.display = 'block';
             analiseEl.innerHTML = `<strong style="color:${cor}">🧠 filipa analisa:</strong> ${dados.justificativa}<br><br><strong style="color:#ff4444">⚠️ Riscos:</strong> ${dados.riscos}`;
         }
 
-        // 8. Botoes de acao
         const actions = document.getElementById('actionButtons');
         if (actions) {
             actions.style.display = 'flex';
@@ -473,59 +428,42 @@ if (riskSec && dados.stopLoss !== '--') {
             if (btnSell) btnSell.style.display = dados.direcao === 'VENDA' ? 'flex' : 'none';
         }
 
-        // 9. Engines status (badge no topo)
         this.renderEnginesStatus(dados.engines);
     },
 
-    
-// 🔧 BUG FIX v18.0 - Formatação de números por mercado
-formatarNumero(valor, mercado) {
-    if (!valor || valor === '--' || isNaN(valor)) return '--';
-    const num = parseFloat(valor);
-    if (isNaN(num)) return '--';
-    
-    // B3 (WIN/WDO) - Números inteiros com ponto de milhar
-    if (mercado && (mercado.includes('b3') || mercado.includes('WIN') || mercado.includes('WDO') || mercado.includes('Índice'))) {
-        return Math.round(num).toLocaleString('pt-BR');
-    }
-    
-    // Forex - 5 casas decimais
-    if (mercado && (mercado.includes('forex') || mercado.includes('EUR') || mercado.includes('USD') || mercado.includes('GBP'))) {
-        return num.toFixed(5).replace('.', ',');
-    }
-    
-    // Crypto - 2 casas decimais
-    if (mercado && (mercado.includes('crypto') || mercado.includes('Bitcoin') || mercado.includes('Ethereum'))) {
+    // ✅ CORRIGIDO: Formatação sem duplicação
+    formatarNumero(valor, mercado) {
+        if (!valor || valor === '--' || isNaN(valor)) return '--';
+        const num = parseFloat(valor);
+        if (isNaN(num)) return '--';
+        
+        if (mercado && (mercado.includes('b3') || mercado.includes('WIN') || mercado.includes('WDO') || mercado.includes('Índice'))) {
+            return Math.round(num).toLocaleString('pt-BR');
+        }
+        if (mercado && (mercado.includes('forex') || mercado.includes('EUR') || mercado.includes('USD') || mercado.includes('GBP'))) {
+            return num.toFixed(5).replace('.', ',');
+        }
+        if (mercado && (mercado.includes('crypto') || mercado.includes('Bitcoin') || mercado.includes('Ethereum'))) {
+            return num.toFixed(2).replace('.', ',');
+        }
+        if (mercado && (mercado.includes('stocks') || mercado.includes('Apple') || mercado.includes('Tesla'))) {
+            return num.toFixed(2).replace('.', ',');
+        }
+        if (mercado && (mercado.includes('commodities') || mercado.includes('Ouro') || mercado.includes('Petróleo'))) {
+            return num.toFixed(2).replace('.', ',');
+        }
+        if (mercado && mercado.includes('otc')) {
+            return num.toFixed(5).replace('.', ',');
+        }
         return num.toFixed(2).replace('.', ',');
-    }
-    
-    // Stocks - 2 casas decimais
-    if (mercado && (mercado.includes('stocks') || mercado.includes('Apple') || mercado.includes('Tesla'))) {
-        return num.toFixed(2).replace('.', ',');
-    }
-    
-    // Commodities - 2 casas decimais
-    if (mercado && (mercado.includes('commodities') || mercado.includes('Ouro') || mercado.includes('Petróleo'))) {
-        return num.toFixed(2).replace('.', ',');
-    }
-    
-    // OTC - 5 casas decimais
-    if (mercado && mercado.includes('otc')) {
-        return num.toFixed(5).replace('.', ',');
-    }
-    
-    // Padrão - 2 casas
-    return num.toFixed(2).replace('.', ',');
-},
-    // Helper para setar texto com fallback
+    },
+
     setText(id, value) {
         const el = document.getElementById(id);
         if (el) el.textContent = value ?? '--';
     },
 
-    // Renderizar status das engines
     renderEnginesStatus(engines) {
-        // Se ja existir a section, remove
         const old = document.getElementById('enginesStatusSection');
         if (old) old.remove();
 
@@ -554,31 +492,23 @@ formatarNumero(valor, mercado) {
         return `<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:${bg};border:1px solid ${border};border-radius:20px;font-size:.75rem;font-weight:600;color:${color};"><span style="width:8px;height:8px;background:${color};border-radius:50%;"></span>${engine.name}</div>`;
     },
 
-    // ============================================================
-    // MOSTRAR MODULOS FILIPA - v14.8d
-    // ============================================================
     showModules(dados) {
-        // Ativar todos os modulos
         const modules = ['timerModule', 'riskModule', 'contextModule', 'checklistModule'];
         modules.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'block';
         });
 
-        // 1. TIMER
         this.setText('bestEntry', dados.melhorEntrada);
         this.setText('volatilityStatus', dados.volatilidade);
         this.setText('sessionStatus', dados.sessao);
         document.getElementById('timerLabel').textContent = 'Analise completa!';
-        // Iniciar countdown visual
         this.startTimerCountdown(60);
 
-        // 2. RISK MODULE - sincronizar com dados do Juiz
         const confInput = document.getElementById('riskConfidence');
         if (confInput) confInput.value = dados.confianca;
         this.calcRisk();
 
-        // 3. CONTEXTO
         this.setText('contextPrice', dados.precoAtual);
         this.setText('contextChange', dados.volatilidade);
         this.setText('contextHigh', '--');
@@ -586,7 +516,6 @@ formatarNumero(valor, mercado) {
         this.setText('contextVolume', '--');
         this.setText('contextNews', dados.noticias);
 
-        // 4. CHECKLIST - auto-check baseado na analise
         const c1 = document.getElementById('check1');
         const c2 = document.getElementById('check2');
         const c3 = document.getElementById('check3');
@@ -607,13 +536,10 @@ formatarNumero(valor, mercado) {
             const mins = Math.floor(remaining / 60).toString().padStart(2, '0');
             const secs = (remaining % 60).toString().padStart(2, '0');
             display.textContent = `${mins}:${secs}`;
-
-            // Atualizar circulo SVG
             if (circle) {
                 const offset = 283 - (remaining / seconds) * 283;
                 circle.setAttribute('stroke-dashoffset', offset);
             }
-
             if (remaining <= 0) {
                 clearInterval(interval);
                 display.textContent = '00:00';
@@ -655,9 +581,6 @@ formatarNumero(valor, mercado) {
         }
     },
 
-    // ============================================================
-    // HELPERS
-    // ============================================================
     calcularQualidade(confianca, score) {
         const c = parseInt(confianca) || 0;
         const s = parseInt(score) || 0;
@@ -680,24 +603,21 @@ formatarNumero(valor, mercado) {
     },
 
     detectarSessao() {
-    const agora = new Date();
-    const h = agora.getHours();
-    const diaSemana = agora.getDay();
-    const ehDiaUtil = diaSemana >= 1 && diaSemana <= 5;
-    if (ehDiaUtil && h >= 10 && h < 17) return 'B3 Aberta';
-    if (!ehDiaUtil) return 'B3 Fechada (Fim de Semana)';
-    if (h < 10) return 'B3 Fechada (Pre-Abertura)';
-    if (h >= 17) return 'B3 Fechada (Pos-Fechamento)';
-    const hUTC = agora.getUTCHours();
-    if (hUTC >= 13 && hUTC < 22) return 'Europa + EUA';
-    if (hUTC >= 22 || hUTC < 6) return 'Asia';
-    if (hUTC >= 6 && hUTC < 13) return 'Europa';
-    return 'Transicao';
-},
+        const agora = new Date();
+        const h = agora.getHours();
+        const diaSemana = agora.getDay();
+        const ehDiaUtil = diaSemana >= 1 && diaSemana <= 5;
+        if (ehDiaUtil && h >= 10 && h < 17) return 'B3 Aberta';
+        if (!ehDiaUtil) return 'B3 Fechada (Fim de Semana)';
+        if (h < 10) return 'B3 Fechada (Pre-Abertura)';
+        if (h >= 17) return 'B3 Fechada (Pos-Fechamento)';
+        const hUTC = agora.getUTCHours();
+        if (hUTC >= 13 && hUTC < 22) return 'Europa + EUA';
+        if (hUTC >= 22 || hUTC < 6) return 'Asia';
+        if (hUTC >= 6 && hUTC < 13) return 'Europa';
+        return 'Transicao';
+    },
 
-    // ============================================================
-    // HISTORICO & ALERTAS
-    // ============================================================
     registrarHistorico(resultado, visao) {
         const hist = { 
             timestamp: new Date().toLocaleTimeString('pt-BR'), 
@@ -716,8 +636,8 @@ formatarNumero(valor, mercado) {
 
         if (typeof FilipaState !== 'undefined') FilipaState.addAnalysis(hist);
         if (typeof Alerts !== 'undefined') Alerts.add(resultado.direcao + ' ' + resultado.ativo + ' | ' + resultado.confianca + '%', 'success');
-       const histConf = resultado.direcao === 'COMPRA' ? resultado.probBuy : resultado.direcao === 'VENDA' ? resultado.probSell : resultado.confianca;
-this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
+        const histConf = resultado.direcao === 'COMPRA' ? resultado.probBuy : resultado.direcao === 'VENDA' ? resultado.probSell : resultado.confianca;
+        this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
         this.playAlert(resultado.direcao, resultado.confianca);
 
         if (Notification.permission === 'granted' && resultado.direcao !== 'NEUTRO') {
@@ -731,8 +651,6 @@ this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
     renderHistoryItem(hist) {
         const list = document.getElementById('historyList');
         if (!list) return;
-
-        // Remover empty state se existir
         const empty = list.querySelector('.empty-history');
         if (empty) empty.remove();
 
@@ -802,12 +720,8 @@ this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
         if (t) t.textContent = texto || 'Processando...'; 
     },
 
-    // ============================================================
-    // REGISTRAR CUSTOS IAs — v14.8f (integração Admin)
-    // ============================================================
-    async registrarCustos(costs) {
+        async registrarCustos(costs) {
         try {
-            // Groq Vision
             if (costs.groq > 0) {
                 await fetch(this.API_URL + '/api/admin/costs', {
                     method: 'POST',
@@ -820,7 +734,6 @@ this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
                     })
                 });
             }
-            // DeepSeek Curador
             if (costs.deepseek > 0) {
                 await fetch(this.API_URL + '/api/admin/costs', {
                     method: 'POST',
@@ -833,7 +746,6 @@ this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
                     })
                 });
             }
-            // Claude Haiku
             if (costs.claude > 0) {
                 await fetch(this.API_URL + '/api/admin/costs', {
                     method: 'POST',
@@ -852,9 +764,6 @@ this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
         }
     },
 
-    // ============================================================
-    // ACOES
-    // ============================================================
     confirmTrade(direcao) {
         if (!this.lastAnalysis) return;
         const dados = this.lastAnalysis;
@@ -888,15 +797,12 @@ this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
         const panel = document.getElementById('resultPanel');
         if (panel) { panel.style.display = 'none'; panel.classList.remove('active'); }
 
-        // Esconder modulos
         ['timerModule','riskModule','contextModule','checklistModule'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
 
-        // Limpar timer
         if (this._timerInterval) clearInterval(this._timerInterval);
-
         this.mostrarStatus('ready', 'Resultado descartado. Aguardando nova analise...');
     },
 
@@ -913,7 +819,6 @@ document.addEventListener('DOMContentLoaded', () => {
     Vision.init();
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
 
-    // Bind checklist changes
     ['check1','check2','check3','check4','check5','check6'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', () => Vision.updateChecklist());
