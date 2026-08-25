@@ -1,0 +1,59 @@
+📄 DOCUMENTAÇÃO DO SISTEMA: FILIPA v18.0
+🎯 1. Visão Geral
+Sistema de análise técnica de trading baseado em IA (Visão Computacional + Lógica Quantitativa).
+Foco Atual: Copa BTG Trader (Mercado Simulado).
+Mercados Ativos: B3 (WIN, WDO, BIT, ETH, SOL), Forex, Crypto, Stocks, Commodities, OTC.
+Pipeline: Vision → Quant → Curator → Judge → Learning.
+🛠️ 2. Correções Críticas Implementadas (v18.0)
+Estas foram as soluções que estabilizaram o sistema para produção:
+Parser de JSON Robusto (B3 Vision):
+Problema: A IA Qwen às vezes retornava texto explicativo junto com o JSON, quebrando o JSON.parse() e gerando erro 500.
+Solução: Implementado regex rawResponse.match(/{[\s\S]*}/) para extrair apenas o bloco JSON, com um fallback seguro que retorna dados padrão em vez de travar a pipeline.
+Prompt Rigoroso (Qwen Service):
+O prompt foi alterado para exigir APENAS o objeto JSON, sem markdown, sem explicações e com campos obrigatórios preenchidos.
+Cálculo em Pontos (B3):
+Forçado visionData.points_mode = true para WIN, WDO e Cripto B3. O judge.js agora calcula Stop Loss e Take Profit somando/subtraindo pontos (ex: preco + 100), e não porcentagem, evitando stops irreais.
+🌐 3. Arquitetura e Deploy
+O sistema está dividido em Frontend e Backend para escalabilidade e segurança:
+Componente
+Plataforma
+Configuração Chave
+URL Atual
+Frontend
+Vercel
+Root Directory: frontend
+https://filipa-analytics.vercel.app (e filipaanalytics.com.br em propagação)
+Backend
+Render
+Root Directory: backend, Node 24, Porta 10000
+https://filipa-analytics.onrender.com
+Banco de Dados
+Supabase
+(Opcional, para módulo Learning)
+Configurado via Env Vars
+Pagamentos
+Kiwify
+Webhook apontando para o Backend
+/api/webhooks/kiwify
+🔑 4. Variáveis de Ambiente (Render)
+Para o backend funcionar, estas variáveis devem estar configuradas no painel do Render:
+env
+123
+⚙️ 5. Fluxo da Pipeline (Como os arquivos se conectam)
+vision.js (B3/Stocks/etc): Recebe o Base64 da imagem → Chama qwen.js ou groq.js → Extrai JSON → Gera candles sintéticos se necessário → Define points_mode.
+quant.js: Recebe os candles → Calcula RSI localmente → Conta velas verdes/vermelhas → Gera um score (-2 a +2).
+curator.js: Adiciona contexto (ex: "Sessão B3 Aberta", "Volatilidade Normal"). Não usa API externa.
+judge.js: Recebe Visão + Quant + Curator → Aplica regras de decisão (ex: Score ≥ 2 e RSI < 40 = COMPRA Qualidade A) → Calcula SL/TP baseado no points_mode.
+🚀 6. Roadmap de Upgrades (Pós-Copa BTG)
+Quando o campeonato terminar, estas são as melhorias técnicas sugeridas para a v19.0:
+Híbrido Visão + API Real:
+Manter a extração visual, mas usar a TwelveData API (ou similar) como fallback ou validação para pegar o RSI e preços exatos, eliminando a necessidade de candles sintéticos.
+Análise Multi-Timeframe:
+Permitir que o usuário envie 2 prints (ex: M15 para tendência e M5 para gatilho) e o Curator cruzar esses dados.
+Bot Telegram Integrado:
+Criar um endpoint /api/telegram para que a FILIPA envie os sinais aprovados diretamente para um canal ou grupo VIP.
+Otimização do Judge:
+Refinar as regras de score e RSI com base no histórico de acertos salvo na tabela operacoes do Supabase (Machine Learning simples).
+Dashboard de Performance:
+Tela no frontend mostrando a taxa de acerto (Win Rate) e Profit Factor das análises geradas pelo sistema.
+💡 Dica: Salve este texto em um arquivo README.md ou DOCUMENTACAO_v18.md na raiz do seu projeto GitHub. Assim, sempre que for fazer um upgrade, você sabe exatamente de onde partiu e o que já foi resolvido.

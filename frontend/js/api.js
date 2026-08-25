@@ -48,7 +48,7 @@ const API = {
 
     startPolling() {
         this.checkStatus();
-        setInterval(() => this.checkStatus(), 5000);
+        setInterval(() => this.checkStatus(), 15000);
     }
 };
 window.API = API;

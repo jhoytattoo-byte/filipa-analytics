@@ -1,22 +1,13 @@
 // ============================================================
-// ADMIN v5.1 — SUPABASE NATIVO (Frontend-only)
-// Único admin: contato.multsystem@gmail.com
-// Busca profiles (admins) + usuarios (usuários comuns via login)
+// ADMIN v5.1 — SUPABASE NATIVO (Frontend-only) VERSÃO CORRIGIDA
 // ============================================================
-// No topo do admin.js
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// Substitua pelas suas variáveis reais do Supabase
-const SUPABASE_URL = 'https://bmpvtxjmbizskyaqyfhe.supabase.co';
-const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_AQUI'; 
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const Admin = {
     users: [],
     costs: { groq: 0, deepseek: 0, claude: 0, total: 0 },
     costLimit: 50,
     isAdmin: false,
-    supabase: null,
+    supabase: null, // Será preenchido pelo window.supabaseClient
     currentUser: null,
     ADMIN_EMAIL: 'contato.multsystem@gmail.com',
     initAttempts: 0,
@@ -84,7 +75,6 @@ const Admin = {
             return;
         }
 
-        // Verifica se já existe
         let adminItem = document.querySelector('[data-pane="admin"]');
         if (adminItem) {
             console.log('[Admin] Aba Admin já existe');
@@ -98,7 +88,6 @@ const Admin = {
         adminItem.style.borderLeft = '3px solid #ffd700';
         adminItem.style.background = 'linear-gradient(90deg, rgba(255,215,0,.1), transparent)';
 
-        // Adiciona evento de click para navegação
         adminItem.addEventListener('click', () => {
             if (window.Main && window.Main.navigateTo) {
                 window.Main.navigateTo('admin');
@@ -151,10 +140,11 @@ const Admin = {
             // 1. Buscar profiles (admins)
             let profiles = [];
             try {
-const { data, error } = await supabase
-    .from('profiles')
-    .select('id, email, nome, plano, status, total_trades, profit_total, created_at, updated_at, last_sign_in_at, role')
-    .order('created_at', { ascending: false });
+                const { data, error } = await this.supabase
+                    .from('profiles')
+                    .select('id, email, nome, plano, status, total_trades, profit_total, created_at, updated_at, last_sign_in_at, role')
+                    .order('created_at', { ascending: false });
+
                 if (error) {
                     console.warn('[Admin] ⚠️ Erro profiles:', error.message);
                 } else {
@@ -175,7 +165,6 @@ const { data, error } = await supabase
 
                 if (error) {
                     console.warn('[Admin] ⚠️ Erro usuarios:', error.message);
-                    // Se der erro de RLS, tenta sem ordenação
                     if (error.code === '42501' || error.message.includes('policy')) {
                         console.log('[Admin] ⚠️ RLS bloqueando — tente desativar no Supabase');
                     }
@@ -339,7 +328,6 @@ const { data, error } = await supabase
         console.log('[Admin] 🔄 Sincronizando Auth com tabelas...');
 
         try {
-            // 1. Buscar todos os usuários do Auth
             const { data: authUsers, error: authError } = await this.supabase.auth.admin.listUsers();
 
             if (authError) {
@@ -365,7 +353,6 @@ const { data, error } = await supabase
                 const status = authUser.user_metadata?.status || 'ativo';
 
                 try {
-                    // Verifica se já existe em usuarios
                     const { data: existing } = await this.supabase
                         .from('usuarios')
                         .select('id')
@@ -373,7 +360,6 @@ const { data, error } = await supabase
                         .maybeSingle();
 
                     if (!existing) {
-                        // Cria em usuarios
                         const { error: insertError } = await this.supabase
                             .from('usuarios')
                             .insert({
@@ -394,7 +380,6 @@ const { data, error } = await supabase
                         }
                     }
 
-                    // Também verifica/cria em profiles
                     const { data: existingProfile } = await this.supabase
                         .from('profiles')
                         .select('id')
@@ -424,7 +409,6 @@ const { data, error } = await supabase
             alert(`✅ Sincronização concluída!\n📝 ${synced} usuários sincronizados\n❌ ${errors} erros`);
             this.addLog(`🔄 ${synced} usuários sincronizados do Auth`, 'success');
 
-            // Recarrega a lista
             await this.loadUsers();
             await this.loadStats();
 
@@ -575,7 +559,6 @@ const { data, error } = await supabase
                 return;
             }
 
-            // Salva em usuarios
             const { error: usuarioError } = await this.supabase
                 .from('usuarios')
                 .insert({
@@ -591,7 +574,6 @@ const { data, error } = await supabase
                 console.warn('[Admin] Erro usuarios:', usuarioError.message);
             }
 
-            // Salva em profiles
             const { error: profileError } = await this.supabase
                 .from('profiles')
                 .upsert({
@@ -640,7 +622,6 @@ const { data, error } = await supabase
         if (!confirm(confirmMsg)) return;
 
         try {
-            // Deleta de profiles
             const { error: profileError } = await this.supabase
                 .from('profiles')
                 .delete()
@@ -650,7 +631,6 @@ const { data, error } = await supabase
                 await this.supabase.from('profiles').update({ status: 'excluido' }).eq('id', userId);
             }
 
-            // Deleta de usuarios
             await this.supabase.from('usuarios').delete().eq('user_id', userId);
 
             alert('✅ Usuário ' + user.email + ' excluído!');

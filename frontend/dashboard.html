@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <link rel="icon" href="data:,">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Filipa Analytics | FILIPA COMMAND CENTER v14.5</title>
@@ -1275,7 +1276,13 @@ function formatarNumero(valor, mercado) {
 }
 </script>
 
-<!-- 3. Scripts Filipa -->
+<!-- 1. Carregar a biblioteca do Supabase via CDN (OBRIGATÓRIO) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- 2. Inicializar o cliente global -->
+<!-- O cliente já é inicializado no bloco SUPABASE AUTH acima. -->
+
+<!-- 3. Scripts Filipa (Certifique-se de que admin.js vem DEPOIS disso) -->
 <script src="js/state.js"></script>
 <script src="js/api.js"></script>
 <script src="js/alerts.js"></script>
@@ -1284,6 +1291,4 @@ function formatarNumero(valor, mercado) {
 <script src="js/trading.js"></script>
 <script src="js/pulsemarket.js"></script>
 <script src="js/main.js"></script>
-<script src="js/admin.js"></script>
-</body>
-</html>
+<script src="js/admin.js"></script> <!-- Este vai funcionar agora -->
