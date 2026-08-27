@@ -617,8 +617,7 @@ const Vision = {
         return '1:' + (reward / risk).toFixed(1);
     },
 
-  detectarSessao() {
-  
+ detectarSessao() {
     // Se o backend já mandou a sessão correta (via lastAnalysis), usa ela
     if (this.lastAnalysis && this.lastAnalysis.sessao && this.lastAnalysis.sessao !== 'B3 Fechada') {
         return this.lastAnalysis.sessao;
