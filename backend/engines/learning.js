@@ -1,16 +1,18 @@
 // ============================================================
-// ENGINE — LEARNING v17.7 (SQLite)
+// ENGINE — LEARNING v17.7 (SQLite) - CORRIGIDO PARA RENDER
 // ============================================================
 // CHANGELOG v17.7:
 // - Try/catch em todas as operações DB
 // - NUNCA crasha o pipeline se DB falhar
 // - Loga erro mas continua execução
+// - Caminho do DB alterado para /tmp (permite escrita no Render)
 // ============================================================
 
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'database', 'learning.db');
+// 🔥 CORREÇÃO: Usar variável de ambiente ou pasta /tmp (permite escrita no Render)
+const dbPath = process.env.DATABASE_PATH || '/tmp/learning.db';
 let db = null;
 
 // Inicialização segura do DB
