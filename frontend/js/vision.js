@@ -618,6 +618,7 @@ const Vision = {
     },
 
   detectarSessao() {
+  
     // Se o backend já mandou a sessão correta (via lastAnalysis), usa ela
     if (this.lastAnalysis && this.lastAnalysis.sessao && this.lastAnalysis.sessao !== 'B3 Fechada') {
         return this.lastAnalysis.sessao;
