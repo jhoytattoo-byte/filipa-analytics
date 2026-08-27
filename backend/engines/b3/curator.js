@@ -3,8 +3,12 @@ const logger = require('../../utils/logger');
 async function execute(visionData, requestId, config) {
   logger.info('[B3 Curator] Contexto B3/CEI', { requestId });
   
-  const hora = new Date().getHours();
-  const sessao = (hora >= 10 && hora < 17) ? 'B3 Aberta (10h-17h)' : 'B3 Fechada';
+  // Força o cálculo da hora no fuso horário de Brasília
+const dataBrasilia = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+const hora = new Date(dataBrasilia).getHours();
+
+const sessao = (hora >= 10 && hora < 18) ? 'B3 Aberta (10h-18h)' : 'B3 Fechada'; 
+// Nota: Ajustei para < 18, pois o mercado futuro vai até as 18:00
   
   return {
     regime: 'LATERAL',
