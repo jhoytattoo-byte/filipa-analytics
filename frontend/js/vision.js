@@ -25,21 +25,21 @@ const Vision = {
     },
 
     // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
-    async checkBackendStatus() {
-        try {
-            const res = await fetch(this.API_URL + '/health'); 
-            const data = await res.json();
-            if (data.success) {
-                this.updateBackendStatus(true, data.engine === 'running');
-            } else {
-                this.updateBackendStatus(false, false);
-            }
-        } catch (e) {
-            console.log('Backend offline:', e.message);
+   async checkBackendStatus() {
+    try {
+        const res = await fetch(this.API_URL + '/health'); // SEM /api!
+        const data = await res.json();
+        if (data.success) {
+            this.updateBackendStatus(true, data.engine === 'running');
+        } else {
             this.updateBackendStatus(false, false);
         }
-        setTimeout(() => this.checkBackendStatus(), 15000);
-    },
+    } catch (e) {
+        console.log('Backend offline:', e.message);
+        this.updateBackendStatus(false, false);
+    }
+    setTimeout(() => this.checkBackendStatus(), 15000);
+}
 
     // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
     async wakeUpBackend() {
@@ -640,7 +640,7 @@ const Vision = {
     // Para ativos cripto (BIT, ETH, SOL), o mercado é 24/7
     // Se você selecionou um ativo cripto, retorne algo mais apropriado
     return 'Transicao';
-}
+    },
 
     registrarHistorico(resultado, visao) {
         const hist = { 
