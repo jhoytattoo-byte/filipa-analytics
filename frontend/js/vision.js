@@ -24,10 +24,10 @@ const Vision = {
         catch (e) { console.log('AudioContext nao disponivel'); }
     },
 
-   // ✅ CORRIGIDO: Sem headers, com intervalo de 15 segundos
+       // ✅ CORRIGIDO: Usa /health (SEM /api)
     async checkBackendStatus() {
         try {
-            const res = await fetch(this.API_URL + '/api/health'); // SEM HEADERS!
+            const res = await fetch(this.API_URL + '/health'); 
             const data = await res.json();
             if (data.success) {
                 this.updateBackendStatus(true, data.engine === 'running');
@@ -38,14 +38,14 @@ const Vision = {
             console.log('Backend offline:', e.message);
             this.updateBackendStatus(false, false);
         }
-        setTimeout(() => this.checkBackendStatus(), 15000); // 15 segundos
+        setTimeout(() => this.checkBackendStatus(), 15000);
     },
 
-    // ✅ CORRIGIDO: Função única para acordar o servidor
-       async wakeUpBackend() {
+    // ✅ CORRIGIDO: Usa /health (SEM /api)
+    async wakeUpBackend() {
         try {
-            console.log('[Vision] Tentando acordar o backend...');
-            await fetch(this.API_URL + '/api/health');
+            await fetch(this.API_URL + '/health');
+            console.log('[Vision] Backend acordado!');
         } catch (e) {
             setTimeout(() => this.wakeUpBackend(), 10000);
         }
@@ -232,7 +232,7 @@ const Vision = {
         this.mostrarStatus('ready', 'Aguardando imagem...');
     },
 
-    // ============================================================
+       // ============================================================
     // ANALISAR - v14.8d CORRIGIDO
     // ============================================================
     analisar: async function () {
@@ -331,7 +331,13 @@ const Vision = {
             this.mostrarProgresso(true, 100, 'Concluido!');
 
         } catch (e) { 
-            this.mostrarStatus('error', 'Erro: ' + e.message); 
+            // ✅ MELHOR DIAGNÓSTICO
+            console.error('[VISION] FALHA COMPLETA:', {
+                message: e.message,
+                endpoint: this.API_URL + '/api/analyze',
+                error: e
+            });
+            this.mostrarStatus('error', 'Falha na comunicação com o servidor'); 
             if (typeof Alerts !== 'undefined') Alerts.add(e.message, 'error'); 
         }
         finally { 
@@ -340,7 +346,7 @@ const Vision = {
             setTimeout(() => this.mostrarProgresso(false), 3000); 
         }
     },
-
+    
     // ============================================================
     // EXIBIR RESULTADO
     // ============================================================
