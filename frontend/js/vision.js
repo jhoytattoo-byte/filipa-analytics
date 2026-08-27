@@ -617,30 +617,29 @@ const Vision = {
         return '1:' + (reward / risk).toFixed(1);
     },
 
-   detectarSessao() {
-    // Cria um objeto Date com o fuso de Brasília (UTC-3) SEMPRE
-    const agora = new Date();
+  detectarSessao() {
+    // Se o backend já mandou a sessão correta (via lastAnalysis), usa ela
+    if (this.lastAnalysis && this.lastAnalysis.sessao && this.lastAnalysis.sessao !== 'B3 Fechada') {
+        return this.lastAnalysis.sessao;
+    }
     
-    // Converte para horário de Brasília (UTC-3) - Fórmula segura
-    const brasiliaOffset = -3 * 60; // UTC-3 em minutos
+    // Caso contrário, calcula com a fórmula de Brasília (UTC-3)
+    const agora = new Date();
     const utcTime = agora.getTime() + (agora.getTimezoneOffset() * 60000);
-    const brasiliaTime = new Date(utcTime + (brasiliaOffset * 60000));
+    const brasiliaTime = new Date(utcTime + (-3 * 60 * 60000));
     
     const h = brasiliaTime.getHours();
     const diaSemana = brasiliaTime.getDay();
     
     const ehDiaUtil = diaSemana >= 1 && diaSemana <= 5;
     
-    // Horário da B3: 10h às 17h (exceto feriados)
     if (ehDiaUtil && h >= 10 && h < 17) return 'B3 Aberta';
     if (!ehDiaUtil) return 'B3 Fechada (Fim de Semana)';
     if (h < 10) return 'B3 Fechada (Pre-Abertura)';
     if (h >= 17) return 'B3 Fechada (Pos-Fechamento)';
     
-    // Para ativos cripto (BIT, ETH, SOL), o mercado é 24/7
-    // Se você selecionou um ativo cripto, retorne algo mais apropriado
     return 'Transicao';
-    },
+},
 
     registrarHistorico(resultado, visao) {
         const hist = { 
