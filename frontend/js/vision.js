@@ -15,6 +15,7 @@ const Vision = {
         this.setupLegacyBrowser();
         this.initAudio();
         this.checkBackendStatus();
+        this.wakeUpBackend();
         console.log('Vision v14.8d inicializado');
     },
 
@@ -23,7 +24,7 @@ const Vision = {
         catch (e) { console.log('AudioContext nao disponivel'); }
     },
 
-    // ✅ CORRIGIDO: Verificação com intervalo de 15 segundos (sem headers)
+    // ✅ CORRIGIDO: Sem headers, com intervalo de 15 segundos
     async checkBackendStatus() {
         try {
             const res = await fetch(this.API_URL + '/api/health'); 
@@ -40,11 +41,11 @@ const Vision = {
         setTimeout(() => this.checkBackendStatus(), 15000);
     },
 
-    // ✅ CORRIGIDO: Função única para acordar o servidor
+    // ✅ CORRIGIDO: Função única para acordar
     async wakeUpBackend() {
         try {
-            console.log('[Vision] Tentando acordar o backend...');
             await fetch(this.API_URL + '/api/health');
+            console.log('[Vision] Backend acordado!');
         } catch (e) {
             setTimeout(() => this.wakeUpBackend(), 10000);
         }
@@ -203,7 +204,6 @@ const Vision = {
         });
     },
 
-    // ✅ CORRIGIDO: this agora funciona corretamente
     carregarImagem(blob) {
         if (!blob) return;
         this.currentImageBlob = blob;
@@ -232,9 +232,9 @@ const Vision = {
     },
 
     // ============================================================
-    // ANALISAR - v14.8d CORRIGIDO
+    // ANALISAR
     // ============================================================
-    analisar: async function () {
+    async analisar() {
         if (!this.currentImageBase64) { 
             this.mostrarStatus('error', 'Nenhuma imagem carregada'); 
             return; 
@@ -401,428 +401,4 @@ const Vision = {
             const pb = document.getElementById('probBuy');
             const ps = document.getElementById('probSell');
             if (pb) { pb.style.width = dados.probBuy + '%'; pb.innerHTML = `<span>${dados.probBuy}%</span>`; }
-            if (ps) { ps.style.width = dados.probSell + '%'; ps.innerHTML = `<span>${dados.probSell}%</span>`; }
-        }
-
-        const timingSec = document.getElementById('timingSection');
-        if (timingSec) {
-            timingSec.style.display = 'grid';
-            this.setText('timingEntry', dados.melhorEntrada);
-            this.setText('timingVol', dados.volatilidade);
-            this.setText('timingSession', dados.sessao);
-            this.setText('timingNews', dados.noticias);
-        }
-
-        const analiseEl = document.getElementById('analysisText');
-        if (analiseEl) {
-            analiseEl.style.display = 'block';
-            analiseEl.innerHTML = `<strong style="color:${cor}">🧠 filipa analisa:</strong> ${dados.justificativa}<br><br><strong style="color:#ff4444">⚠️ Riscos:</strong> ${dados.riscos}`;
-        }
-
-        const actions = document.getElementById('actionButtons');
-        if (actions) {
-            actions.style.display = 'flex';
-            const btnBuy = document.getElementById('btnActionBuy');
-            const btnSell = document.getElementById('btnActionSell');
-            if (btnBuy) btnBuy.style.display = dados.direcao === 'COMPRA' ? 'flex' : 'none';
-            if (btnSell) btnSell.style.display = dados.direcao === 'VENDA' ? 'flex' : 'none';
-        }
-
-        this.renderEnginesStatus(dados.engines);
-    },
-
-    // ✅ CORRIGIDO: Formatação sem duplicação
-    formatarNumero(valor, mercado) {
-        if (!valor || valor === '--' || isNaN(valor)) return '--';
-        const num = parseFloat(valor);
-        if (isNaN(num)) return '--';
-        
-        if (mercado && (mercado.includes('b3') || mercado.includes('WIN') || mercado.includes('WDO') || mercado.includes('Índice'))) {
-            return Math.round(num).toLocaleString('pt-BR');
-        }
-        if (mercado && (mercado.includes('forex') || mercado.includes('EUR') || mercado.includes('USD') || mercado.includes('GBP'))) {
-            return num.toFixed(5).replace('.', ',');
-        }
-        if (mercado && (mercado.includes('crypto') || mercado.includes('Bitcoin') || mercado.includes('Ethereum'))) {
-            return num.toFixed(2).replace('.', ',');
-        }
-        if (mercado && (mercado.includes('stocks') || mercado.includes('Apple') || mercado.includes('Tesla'))) {
-            return num.toFixed(2).replace('.', ',');
-        }
-        if (mercado && (mercado.includes('commodities') || mercado.includes('Ouro') || mercado.includes('Petróleo'))) {
-            return num.toFixed(2).replace('.', ',');
-        }
-        if (mercado && mercado.includes('otc')) {
-            return num.toFixed(5).replace('.', ',');
-        }
-        return num.toFixed(2).replace('.', ',');
-    },
-
-    setText(id, value) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value ?? '--';
-    },
-
-    renderEnginesStatus(engines) {
-        const old = document.getElementById('enginesStatusSection');
-        if (old) old.remove();
-
-        const panel = document.getElementById('resultPanel');
-        if (!panel || !engines) return;
-
-        const html = `
-        <div id="enginesStatusSection" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:14px;background:rgba(0,191,255,.05);border:1px solid rgba(0,191,255,.15);border-radius:14px;">
-            <div style="font-size:.7rem;color:#9aa7bd;width:100%;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">🧠 IAs Utilizadas</div>
-            ${this.engineBadge(engines.groqVision)}
-            ${this.engineBadge(engines.quant)}
-            ${this.engineBadge(engines.curador)}
-            ${this.engineBadge(engines.claude)}
-        </div>`;
-
-        const header = panel.querySelector('.result-header');
-        if (header) header.insertAdjacentHTML('afterend', html);
-    },
-
-    engineBadge(engine) {
-        if (!engine) return '';
-        const isOnline = engine.status === 'online';
-        const color = isOnline ? '#00ff88' : '#ff4444';
-        const bg = isOnline ? 'rgba(0,255,136,.1)' : 'rgba(255,68,68,.1)';
-        const border = isOnline ? 'rgba(0,255,136,.2)' : 'rgba(255,68,68,.2)';
-        return `<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:${bg};border:1px solid ${border};border-radius:20px;font-size:.75rem;font-weight:600;color:${color};"><span style="width:8px;height:8px;background:${color};border-radius:50%;"></span>${engine.name}</div>`;
-    },
-
-    showModules(dados) {
-        const modules = ['timerModule', 'riskModule', 'contextModule', 'checklistModule'];
-        modules.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'block';
-        });
-
-        this.setText('bestEntry', dados.melhorEntrada);
-        this.setText('volatilityStatus', dados.volatilidade);
-        this.setText('sessionStatus', dados.sessao);
-        document.getElementById('timerLabel').textContent = 'Analise completa!';
-        this.startTimerCountdown(60);
-
-        const confInput = document.getElementById('riskConfidence');
-        if (confInput) confInput.value = dados.confianca;
-        this.calcRisk();
-
-        this.setText('contextPrice', dados.precoAtual);
-        this.setText('contextChange', dados.volatilidade);
-        this.setText('contextHigh', '--');
-        this.setText('contextLow', '--');
-        this.setText('contextVolume', '--');
-        this.setText('contextNews', dados.noticias);
-
-        const c1 = document.getElementById('check1');
-        const c2 = document.getElementById('check2');
-        const c3 = document.getElementById('check3');
-        if (c1) c1.checked = true;
-        if (c2) c2.checked = dados.confianca >= 70;
-        if (c3) c3.checked = dados.qualidade === 'A' || dados.qualidade === 'B';
-        this.updateChecklist();
-    },
-
-    startTimerCountdown(seconds) {
-        let remaining = seconds;
-        const display = document.getElementById('timerCountdown');
-        const circle = document.getElementById('timerProgress');
-        if (!display) return;
-
-        const interval = setInterval(() => {
-            remaining--;
-            const mins = Math.floor(remaining / 60).toString().padStart(2, '0');
-            const secs = (remaining % 60).toString().padStart(2, '0');
-            display.textContent = `${mins}:${secs}`;
-            if (circle) {
-                const offset = 283 - (remaining / seconds) * 283;
-                circle.setAttribute('stroke-dashoffset', offset);
-            }
-            if (remaining <= 0) {
-                clearInterval(interval);
-                display.textContent = '00:00';
-                document.getElementById('timerLabel').textContent = 'Tempo expirado';
-            }
-        }, 1000);
-        this._timerInterval = interval;
-    },
-
-    calcRisk() {
-        const bankroll = parseFloat(document.getElementById('riskBankroll')?.value) || 1000;
-        const percent = parseFloat(document.getElementById('riskPercent')?.value) || 2;
-        const confidence = parseFloat(document.getElementById('riskConfidence')?.value) || 75;
-        const payoff = parseFloat(document.getElementById('riskPayoff')?.value) || 1.5;
-
-        const entryValue = bankroll * (percent / 100);
-        const stopLoss = entryValue;
-        const takeProfit = entryValue * payoff;
-        const adjusted = entryValue * (confidence / 100);
-
-        this.setText('riskEntryValue', 'R$ ' + entryValue.toFixed(2));
-        this.setText('riskStopLossModule', 'R$ ' + stopLoss.toFixed(2));
-        this.setText('riskTakeProfitModule', 'R$ ' + takeProfit.toFixed(2));
-        this.setText('riskAdjusted', 'R$ ' + adjusted.toFixed(2));
-    },
-
-    updateChecklist() {
-        const checks = ['check1','check2','check3','check4','check5','check6'];
-        const checked = checks.filter(id => document.getElementById(id)?.checked).length;
-        const status = document.getElementById('checklistStatus');
-        if (!status) return;
-
-        if (checked === checks.length) {
-            status.className = 'checklist-status ready';
-            status.innerHTML = '<span class="status-icon">✅</span><span class="status-text">PRONTO PARA OPERAR!</span>';
-        } else {
-            status.className = 'checklist-status';
-            status.innerHTML = `<span class="status-icon">⏳</span><span class="status-text">${checked}/${checks.length} confirmacoes...</span>`;
-        }
-    },
-
-    calcularQualidade(confianca, score) {
-        const c = parseInt(confianca) || 0;
-        const s = parseInt(score) || 0;
-        if (c >= 80 && s >= 5) return 'A';
-        if (c >= 70 && s >= 0) return 'B';
-        if (c >= 50) return 'C';
-        return 'D';
-    },
-
-    calcularRR(sl, tp, preco) {
-        if (sl === '--' || tp === '--' || !preco || preco === '--') return '--';
-        const stop = parseFloat(sl);
-        const target = parseFloat(tp);
-        const price = parseFloat(preco);
-        if (isNaN(stop) || isNaN(target) || isNaN(price) || stop === 0) return '--';
-        const risk = Math.abs(price - stop);
-        const reward = Math.abs(target - price);
-        if (risk === 0) return '--';
-        return '1:' + (reward / risk).toFixed(1);
-    },
-
-    detectarSessao() {
-        const agora = new Date();
-        const h = agora.getHours();
-        const diaSemana = agora.getDay();
-        const ehDiaUtil = diaSemana >= 1 && diaSemana <= 5;
-        if (ehDiaUtil && h >= 10 && h < 17) return 'B3 Aberta';
-        if (!ehDiaUtil) return 'B3 Fechada (Fim de Semana)';
-        if (h < 10) return 'B3 Fechada (Pre-Abertura)';
-        if (h >= 17) return 'B3 Fechada (Pos-Fechamento)';
-        const hUTC = agora.getUTCHours();
-        if (hUTC >= 13 && hUTC < 22) return 'Europa + EUA';
-        if (hUTC >= 22 || hUTC < 6) return 'Asia';
-        if (hUTC >= 6 && hUTC < 13) return 'Europa';
-        return 'Transicao';
-    },
-
-    registrarHistorico(resultado, visao) {
-        const hist = { 
-            timestamp: new Date().toLocaleTimeString('pt-BR'), 
-            pair: resultado.ativo, 
-            timeframe: resultado.timeframe, 
-            direcao: resultado.direcao, 
-            confianca: resultado.confianca, 
-            forca: resultado.confianca >= 80 ? 'FORTE' : resultado.confianca >= 60 ? 'MODERADA' : 'FRACA', 
-            padrao: visao.padrao_candle || 'N/A', 
-            justificativa: resultado.justificativa, 
-            source: this.browserEngine.lastExtract ? 'browser_engine' : 'manual',
-            stopLoss: resultado.stopLoss,
-            takeProfit: resultado.takeProfit,
-            rr: resultado.rr
-        };
-
-        if (typeof FilipaState !== 'undefined') FilipaState.addAnalysis(hist);
-        if (typeof Alerts !== 'undefined') Alerts.add(resultado.direcao + ' ' + resultado.ativo + ' | ' + resultado.confianca + '%', 'success');
-        const histConf = resultado.direcao === 'COMPRA' ? resultado.probBuy : resultado.direcao === 'VENDA' ? resultado.probSell : resultado.confianca;
-        this.mostrarStatus('success', resultado.direcao + ' | ' + histConf + '%');
-        this.playAlert(resultado.direcao, resultado.confianca);
-
-        if (Notification.permission === 'granted' && resultado.direcao !== 'NEUTRO') {
-            new Notification('Filipa SINAL', { body: resultado.direcao + ' ' + resultado.ativo + ' - ' + resultado.confianca + '%' });
-        }
-
-        if (typeof PulseMarket !== 'undefined') PulseMarket.addSignalFromAnalysis(resultado);
-        this.renderHistoryItem(hist);
-    },
-
-    renderHistoryItem(hist) {
-        const list = document.getElementById('historyList');
-        if (!list) return;
-        const empty = list.querySelector('.empty-history');
-        if (empty) empty.remove();
-
-        const item = document.createElement('div');
-        item.className = 'history-item ' + hist.direcao.toLowerCase();
-        item.innerHTML = `
-            <div class="history-time">${hist.timestamp}</div>
-            <div class="history-pattern">${hist.pair} ${hist.padrao !== 'N/A' ? '| ' + hist.padrao : ''}</div>
-            <div class="history-confidence">${hist.confianca}%</div>
-            <div class="history-direction">${hist.direcao}</div>
-        `;
-        list.insertBefore(item, list.firstChild);
-    },
-
-    playAlert(direcao, confianca) {
-        if (!this.audioContext) return;
-        const confNum = parseFloat(confianca);
-        if (isNaN(confNum) || !isFinite(confNum) || confNum < 0) return;
-        if (direcao === 'NEUTRO' || confNum < 30) { this.playNeutralSound(); return; }
-
-        const volume = Math.min(confNum / 100, 1) * 0.25;
-        if (volume <= 0) return;
-
-        const osc = this.audioContext.createOscillator();
-        const gain = this.audioContext.createGain();
-        osc.connect(gain); 
-        gain.connect(this.audioContext.destination);
-
-        if (direcao === 'COMPRA') { 
-            osc.frequency.setValueAtTime(523, this.audioContext.currentTime); 
-            osc.frequency.exponentialRampToValueAtTime(784, this.audioContext.currentTime + 0.2); 
-        } else { 
-            osc.frequency.setValueAtTime(784, this.audioContext.currentTime); 
-            osc.frequency.exponentialRampToValueAtTime(523, this.audioContext.currentTime + 0.2); 
-        }
-
-        gain.gain.setValueAtTime(volume, this.audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
-        osc.start(this.audioContext.currentTime); 
-        osc.stop(this.audioContext.currentTime + 0.4);
-    },
-
-    playNeutralSound() {
-        if (!this.audioContext) return;
-        const osc = this.audioContext.createOscillator();
-        const gain = this.audioContext.createGain();
-        osc.connect(gain); 
-        gain.connect(this.audioContext.destination);
-        osc.frequency.setValueAtTime(600, this.audioContext.currentTime);
-        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
-        osc.start(this.audioContext.currentTime); 
-        osc.stop(this.audioContext.currentTime + 0.2);
-    },
-
-    mostrarStatus(tipo, msg) { 
-        const el = document.getElementById('analysisStatus'); 
-        if (el) { el.className = 'status-text ' + tipo; el.textContent = msg; } 
-    },
-
-    mostrarProgresso(ativo, pct, texto) { 
-        const c = document.getElementById('progressContainer'), f = document.getElementById('progressFill'), t = document.getElementById('progressText'); 
-        if (!c) return; 
-        if (!ativo) { c.classList.remove('active'); return; } 
-        c.classList.add('active'); 
-        if (f) f.style.width = (pct || 0) + '%'; 
-        if (t) t.textContent = texto || 'Processando...'; 
-    },
-
-        async registrarCustos(costs) {
-        try {
-            if (costs.groq > 0) {
-                await fetch(this.API_URL + '/api/admin/costs', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        engine: 'groq',
-                        cost: costs.groq,
-                        operation: 'vision_extract',
-                        details: { timestamp: new Date().toISOString() }
-                    })
-                });
-            }
-            if (costs.deepseek > 0) {
-                await fetch(this.API_URL + '/api/admin/costs', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        engine: 'deepseek',
-                        cost: costs.deepseek,
-                        operation: 'context_analysis',
-                        details: { timestamp: new Date().toISOString() }
-                    })
-                });
-            }
-            if (costs.claude > 0) {
-                await fetch(this.API_URL + '/api/admin/costs', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        engine: 'claude',
-                        cost: costs.claude,
-                        operation: 'decision',
-                        details: { timestamp: new Date().toISOString() }
-                    })
-                });
-            }
-            console.log('[Vision] Custos registrados no Admin:', costs);
-        } catch (e) {
-            console.log('[Vision] Erro ao registrar custos:', e.message);
-        }
-    },
-
-    confirmTrade(direcao) {
-        if (!this.lastAnalysis) return;
-        const dados = this.lastAnalysis;
-        const msg = `Confirmar ${direcao}?\n\n` +
-            `Ativo: ${dados.ativo}\n` +
-            `Confiança: ${dados.confianca}%\n` +
-            `SL: ${dados.stopLoss}\n` +
-            `TP: ${dados.takeProfit}\n` +
-            `RR: ${dados.rr}`;
-
-        if (!confirm(msg)) return;
-
-        const trade = {
-            date: new Date().toISOString(),
-            pair: dados.ativo,
-            direction: direcao,
-            result: null,
-            value: parseFloat(document.getElementById('riskEntryValue')?.textContent?.replace(/[^0-9.,]/g, '').replace(',', '.') || 20),
-            timeframe: dados.timeframe,
-            confidence: dados.confianca,
-            stop_loss: dados.stopLoss,
-            take_profit: dados.takeProfit
-        };
-
-        if (typeof FilipaState !== 'undefined') FilipaState.addTrade(trade);
-        if (typeof Trading !== 'undefined') Trading.renderTrades();
-        if (typeof Alerts !== 'undefined') Alerts.add(`Trade ${direcao} registrado!`, 'success');
-    },
-
-    dismissResult() {
-        const panel = document.getElementById('resultPanel');
-        if (panel) { panel.style.display = 'none'; panel.classList.remove('active'); }
-
-        ['timerModule','riskModule','contextModule','checklistModule'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-        });
-
-        if (this._timerInterval) clearInterval(this._timerInterval);
-        this.mostrarStatus('ready', 'Resultado descartado. Aguardando nova analise...');
-    },
-
-    novaAnalise() {
-        this.dismissResult();
-        this.removerImagem();
-        this.mostrarStatus('ready', 'Aguardando nova imagem...');
-        if (typeof Alerts !== 'undefined') Alerts.add('Nova analise', 'info');
-    }
-};
-
-// Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
-    Vision.init();
-    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-
-    ['check1','check2','check3','check4','check5','check6'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('change', () => Vision.updateChecklist());
-    });
-});
-
-window.Vision = Vision;
+            if (ps) { ps.style.width = dados.probSell +
