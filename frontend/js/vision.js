@@ -25,21 +25,21 @@ const Vision = {
     },
 
     // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
-   async checkBackendStatus() {
-    try {
-        const res = await fetch(this.API_URL + '/health'); // SEM /api!
-        const data = await res.json();
-        if (data.success) {
-            this.updateBackendStatus(true, data.engine === 'running');
-        } else {
+    async checkBackendStatus() {
+        try {
+            const res = await fetch(this.API_URL + '/health'); // SEM /api!
+            const data = await res.json();
+            if (data.success) {
+                this.updateBackendStatus(true, data.engine === 'running');
+            } else {
+                this.updateBackendStatus(false, false);
+            }
+        } catch (e) {
+            console.log('Backend offline:', e.message);
             this.updateBackendStatus(false, false);
         }
-    } catch (e) {
-        console.log('Backend offline:', e.message);
-        this.updateBackendStatus(false, false);
-    }
-    setTimeout(() => this.checkBackendStatus(), 15000);
-}
+        setTimeout(() => this.checkBackendStatus(), 15000);
+    },
 
     // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
     async wakeUpBackend() {
