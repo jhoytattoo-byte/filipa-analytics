@@ -15,6 +15,17 @@ const app = express();
 app.use(cors());
 app.options('*', cors());
 
+// 🔥 GARANTIA ABSOLUTA: Responde a TODAS as requisições OPTIONS antes de qualquer coisa
+app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, Accept');
+        res.header('Access-Control-Max-Age', '86400');
+        return res.sendStatus(204);
+    }
+    next();
+});
 // ============================================================
 // 2. Parser de JSON (Limite alto para imagens em base64)
 // ============================================================
