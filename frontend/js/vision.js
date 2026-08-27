@@ -7,7 +7,7 @@ const Vision = {
     API_URL: 'https://filipa-analytics.onrender.com',
     lastAnalysis: null,
 
-       init() {
+    init() {
         this.setupPaste();
         this.setupFileInput();
         this.setupDragDrop();
@@ -15,7 +15,7 @@ const Vision = {
         this.setupLegacyBrowser();
         this.initAudio();
         this.checkBackendStatus();
-        this.wakeUpBackend(); // 🔥 ADICIONE ISSO (não estava sendo chamado)
+        this.wakeUpBackend(); // 🔥 CORREÇÃO 2: Chamada adicionada
         console.log('Vision v14.8d inicializado');
     },
 
@@ -24,7 +24,7 @@ const Vision = {
         catch (e) { console.log('AudioContext nao disponivel'); }
     },
 
-       // ✅ CORRIGIDO: Usa /health (SEM /api)
+    // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
     async checkBackendStatus() {
         try {
             const res = await fetch(this.API_URL + '/health'); 
@@ -41,7 +41,7 @@ const Vision = {
         setTimeout(() => this.checkBackendStatus(), 15000);
     },
 
-    // ✅ CORRIGIDO: Usa /health (SEM /api)
+    // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
     async wakeUpBackend() {
         try {
             await fetch(this.API_URL + '/health');
@@ -204,7 +204,7 @@ const Vision = {
         });
     },
 
-    // ✅ CORRIGIDO: this agora funciona corretamente
+    // ✅ CORREÇÃO 3: this agora funciona corretamente (guarda o contexto)
     carregarImagem(blob) {
         if (!blob) return;
         this.currentImageBlob = blob;
@@ -232,7 +232,7 @@ const Vision = {
         this.mostrarStatus('ready', 'Aguardando imagem...');
     },
 
-       // ============================================================
+    // ============================================================
     // ANALISAR - v14.8d CORRIGIDO
     // ============================================================
     analisar: async function () {
@@ -251,7 +251,12 @@ const Vision = {
             this.mostrarProgresso(true, 30, 'Enviando para analise...');
             const marketTypeElement = document.getElementById('marketType');
             const lastExtract = this.browserEngine && this.browserEngine.lastExtract;
-            const res = await fetch(this.API_URL + '/api/analyze', {
+            
+            // ✅ CORREÇÃO 4 (log): Adiciona o log do endpoint antes do fetch
+            const endpoint = this.API_URL + '/api/analyze';
+            console.log('[VISION] POST →', endpoint);
+            
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -261,6 +266,9 @@ const Vision = {
                     chartData: lastExtract && lastExtract.chart ? lastExtract.chart : null
                 })
             });
+
+            // ✅ CORREÇÃO 4 (log): Adiciona o log do status HTTP
+            console.log('[VISION] HTTP ←', res.status, res.statusText);
 
             this.mostrarProgresso(true, 60, 'Processando...');
             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -331,7 +339,7 @@ const Vision = {
             this.mostrarProgresso(true, 100, 'Concluido!');
 
         } catch (e) { 
-            // ✅ MELHOR DIAGNÓSTICO
+            // ✅ CORREÇÃO 5 (log no catch): Adiciona o log completo do erro
             console.error('[VISION] FALHA COMPLETA:', {
                 message: e.message,
                 endpoint: this.API_URL + '/api/analyze',
@@ -346,7 +354,7 @@ const Vision = {
             setTimeout(() => this.mostrarProgresso(false), 3000); 
         }
     },
-    
+
     // ============================================================
     // EXIBIR RESULTADO
     // ============================================================
@@ -727,7 +735,7 @@ const Vision = {
         if (t) t.textContent = texto || 'Processando...'; 
     },
 
-        async registrarCustos(costs) {
+    async registrarCustos(costs) {
         try {
             if (costs.groq > 0) {
                 await fetch(this.API_URL + '/api/admin/costs', {
