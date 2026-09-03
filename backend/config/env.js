@@ -1,5 +1,5 @@
 ﻿// ============================================================
-// CONFIG — ENV (v18.1) - ESTRATÉGIA DE CUSTO
+// CONFIG — ENV (v18.2) - ESTRATÉGIA DE CUSTO + DADOS REAIS
 // ============================================================
 // ESTRATÉGIA:
 // 1º: Groq (GRÁTIS) → 2º: Gemini (GRÁTIS) → 3º: Qwen (PAGO)
@@ -49,7 +49,20 @@ const config = {
         tpm: 1000000
     },
 
-    // ... resto da configuração igual ...
+    // ============================================================
+    // 📊 DADOS DE MERCADO (TwelveData + Polygon + Binance)
+    // ============================================================
+    twelvedata: {
+        apiKey: process.env.TWELVEDATA_API_KEY,
+        baseUrl: 'https://api.twelvedata.com'
+    },
+    polygon: {
+        apiKey: process.env.POLYGON_API_KEY,
+        baseUrl: 'https://api.polygon.io'
+    },
+    binance: {
+        baseUrl: 'https://api.binance.com'
+    }
 };
 
 // Validação do modelo Groq
