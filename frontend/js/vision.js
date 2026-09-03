@@ -232,8 +232,8 @@ const Vision = {
         this.mostrarStatus('ready', 'Aguardando imagem...');
     },
 
-    // ============================================================
-    // ANALISAR - v14.8d CORRIGIDO
+        // ============================================================
+    // ANALISAR - v14.8d CORRIGIDO + RISK GATE
     // ============================================================
     analisar: async function () {
         if (!this.currentImageBase64) { 
@@ -276,12 +276,26 @@ const Vision = {
             const data = await res.json();
             if (!data.success) throw new Error(data.error);
 
+            // ============================================================
+            // 🔥 RISK GATE: LER O STATUS DO BACKEND
+            // ============================================================
             const raw = data.data;
             const decisao = raw.decisao || {};
             const visao = raw.visao || {};
             const quant = raw.quant || {};
             const curador = raw.curador || {};
             const estrategia = decisao.estrategia || {};
+
+            // 🔴 SE O RISK GATE BLOQUEOU, MOSTRAR MENSAGEM E NÃO OPERAR
+            if (decisao.timing === 'BLOQUEADO' || decisao.status === 'BLOQUEADO') {
+                this.mostrarStatus('error', '🚫 ' + (decisao.justificativa || 'Operação bloqueada'));
+                this.isAnalyzing = false;
+                document.getElementById('btnAnalyze').disabled = false;
+                return;
+            }
+
+            // ✅ Usa a tendência macro VINDA DO BACKEND (não sobrescreve!)
+            const tendencia = curador.tendencia_macro || visao.tendencia || 'LATERAL';
 
             const c = parseInt(decisao.confianca) || 50;
             const d = decisao.direcao || 'NEUTRO';
@@ -306,7 +320,7 @@ const Vision = {
                 score: quant.score_final ?? quant.score ?? 0,
                 candles: visao.candles_reais?.length ?? visao.candles?.length ?? visao.candles_extraidos ?? visao.num_candles ?? 0,
                 rsi: quant.rsi ?? visao.rsi ?? '--',
-                tendencia: visao.tendencia || quant.tendencia || 'INDEFINIDA',
+                tendencia: tendencia, // ✅ Usa a tendência do backend
                 qualidade: this.calcularQualidade(c, quant.score_final),
                 justificativa: decisao.justificativa || 'Analise concluida.',
                 riscos: decisao.risco_principal || 'Riscos nao identificados.',
@@ -318,7 +332,7 @@ const Vision = {
                 probSell: probSell,
                 melhorEntrada: estrategia.entrada || 'AGORA',
                 volatilidade: curador.volatilidade || 'Normal',
-                sessao: curador.sessao || this.detectarSessao(),
+                sessao: curador.sessao || 'B3 Aberta', // ✅ Usa a sessão do backend
                 noticias: typeof curador.noticias === 'string' ? curador.noticias : (curador.noticias?.headlines ? curador.noticias.headlines.join(' | ') : 'Sem noticias relevantes'),
                 engines: {
                     groqVision: { name: 'Groq Vision', status: visao && visao.ativo ? 'online' : 'offline' },
@@ -354,7 +368,7 @@ const Vision = {
             setTimeout(() => this.mostrarProgresso(false), 3000); 
         }
     },
-
+    
     // ============================================================
     // EXIBIR RESULTADO
     // ============================================================
