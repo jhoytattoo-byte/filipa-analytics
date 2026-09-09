@@ -6,18 +6,15 @@ const prompts = require('../../config/prompts');
 async function execute(visionData, requestId, config) {
   logger.info('[B3 Curator] Contexto B3 + Validação de Dados + IA (DeepSeek/Groq)', { requestId });
   
-  // Força o cálculo da hora no fuso horário de Brasília
   const dataBrasilia = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
   const hora = new Date(dataBrasilia).getHours();
 
   const sessao = (hora >= 10 && hora < 18) ? 'B3 Aberta (10h-18h)' : 'B3 Fechada'; 
 
-  // 🔥 NOVO: Validação de Dados Reais
   let dadosReais = null;
   let ancoragemValida = true;
   let tendenciaMacro = 'LATERAL';
 
-  // Identifica o símbolo da API baseado no ativo
   const simboloAPI = visionData.ativo === 'WIN' ? '^BVSP' : 
                       visionData.ativo === 'WDO' ? 'USDBRL' : 
                       visionData.ativo === 'BIT' ? 'BTCUSD' : '';
@@ -26,7 +23,6 @@ async function execute(visionData, requestId, config) {
     dadosReais = await getMarketData(visionData.ativo, simboloAPI);
     
     if (dadosReais) {
-      // Compara preço real com preço da Vision (tolerância de 50 pontos)
       const precoVision = parseFloat(visionData.preco_atual);
       if (precoVision && dadosReais.preco_real) {
         const divergencia = Math.abs(precoVision - dadosReais.preco_real);
@@ -35,17 +31,14 @@ async function execute(visionData, requestId, config) {
           logger.warn(`[B3 Curator] ⚠️ Divergência de ${divergencia} pontos detectada!`);
         }
       }
-      
-      // Força tendência macro a partir dos dados reais
       tendenciaMacro = dadosReais.tendencia_macro || 'LATERAL';
     }
   }
 
-  // 🔥 ATIVA DEEPSEEK/GROQ TEXT PARA CONTEXTO MACRO (Variação Dinâmica)
   let contextoIA = '';
   try {
     const promptCurador = prompts.curador;
-    const resposta = await groqService.text(promptCurador, 'llama-3.1-70b-versatile');
+    const resposta = await groqService.text(promptCurador); // ✅ SEM 'llama-3.1'
     const parsed = JSON.parse(resposta);
     contextoIA = parsed.opiniao || '';
   } catch (e) {
@@ -60,13 +53,11 @@ async function execute(visionData, requestId, config) {
     source: dadosReais ? dadosReais.fonte : 'local_default',
     market_hours: '10:00-17:00 BRT',
     
-    // 🔥 NOVOS DADOS VALIDADOS
     dados_reais: dadosReais,
     ancoragem_valida: ancoragemValida,
     tendencia_macro: tendenciaMacro,
     preco_real: dadosReais ? dadosReais.preco_real : null,
     
-    // 🔥 OPINIÃO DA IA (Contexto Macro)
     opiniao_ia: contextoIA
   };
 }

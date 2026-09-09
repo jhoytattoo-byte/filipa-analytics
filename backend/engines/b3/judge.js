@@ -13,11 +13,9 @@ async function execute(data, requestId, config) {
     let direcao = 'NEUTRO';
     let qualidade = 'C';
     
-    // 🔥 RISK GATE: Validação de Dados Reais
     const ancoragemValida = contexto?.ancoragem_valida !== false;
     const tendenciaMacro = contexto?.tendencia_macro || 'LATERAL';
     
-    // 🔴 1. SE DADOS REAIS INVÁLIDOS = BLOQUEADO
     if (!ancoragemValida) {
         return {
             direcao: 'NEUTRO',
@@ -35,7 +33,6 @@ async function execute(data, requestId, config) {
         };
     }
 
-    // 🔴 2. TENDÊNCIA CONTRA A DIREÇÃO = BLOQUEADO
     if (tendenciaMacro === 'ALTA' && direcao === 'VENDA') {
         return {
             direcao: 'VENDA',
@@ -69,7 +66,6 @@ async function execute(data, requestId, config) {
         };
     }
 
-    // 🔴 3. SE SCORE NÃO ALINHADO COM A DIREÇÃO = BLOQUEADO
     if (direcao === 'COMPRA' && score < 2) {
         return {
             direcao: 'COMPRA',
@@ -103,20 +99,17 @@ async function execute(data, requestId, config) {
         };
     }
 
-    // ✅ 4. SE TUDO PASSOU = OPERAÇÃO LIBERADA (COM IA)
     if (score >= 2 && rsi < 40) { direcao = 'COMPRA'; qualidade = 'A'; }
     else if (score <= -2 && rsi > 60) { direcao = 'VENDA'; qualidade = 'A'; }
     else if (score > 0) { direcao = 'COMPRA'; qualidade = 'B'; }
     else if (score < 0) { direcao = 'VENDA'; qualidade = 'B'; }
     
-    // 🔧 CORREÇÃO: Se a IA retornou preço < 1000, provavelmente cortou os zeros
     let preco = visao.preco_atual || 120000;
     if (preco < 1000) {
-        preco = preco * 1000; // Converte 174 -> 174000
+        preco = preco * 1000;
         logger.info('[B3 Judge] Preço ajustado (IA cortou zeros):', preco);
     }
     
-    // ✅ Usa o preço real validado se existir
     if (contexto?.preco_real && contexto.preco_real > 1000) {
         preco = contexto.preco_real;
     }
@@ -124,11 +117,10 @@ async function execute(data, requestId, config) {
     const slPoints = config.risk.default_sl_points || 100;
     const tpPoints = config.risk.default_tp_points || 200;
     
-    // 🔥 ATIVA O CLAUDE/GROQ TEXT PARA INTERPRETAR (Variação Dinâmica)
     let justificativaIA = '';
     try {
         const promptJuiz = prompts.juiz.replace('{RSI}', rsi).replace('{SCORE}', score).replace('{TENDENCIA}', tendenciaMacro);
-        const resposta = await groqService.text(promptJuiz, 'llama-3.1-70b-versatile');
+        const resposta = await groqService.text(promptJuiz); // ✅ SEM 'llama-3.1'
         const parsed = JSON.parse(resposta);
         justificativaIA = parsed.justificativa || `B3: RSI ${rsi}, Score ${score}, Tendência ${tendenciaMacro}.`;
     } catch (e) {
