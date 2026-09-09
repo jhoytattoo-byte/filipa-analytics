@@ -455,12 +455,20 @@ const Vision = {
             this.setText('timingNews', dados.noticias);
         }
 
-        const analiseEl = document.getElementById('analysisText');
-        if (analiseEl) {
-            analiseEl.style.display = 'block';
-            analiseEl.innerHTML = `<strong style="color:${cor}">🧠 filipa analisa:</strong> ${dados.justificativa}<br><br><strong style="color:#ff4444">⚠️ Riscos:</strong> ${dados.riscos}`;
-        }
-
+      const analiseEl = document.getElementById('analysisText');
+if (analiseEl) {
+    analiseEl.style.display = 'block';
+    
+    // 🔥 Lógica para mostrar o risco correto
+    let mensagemRiscos = '';
+    if (dados.confianca < 70 || dados.qualidade === 'C' || dados.qualidade === 'D') {
+        mensagemRiscos = `⚠️ <strong style="color:#ffaa00">AVISO OPERACIONAL:</strong> Confiança ${dados.confianca}% e Qualidade ${dados.qualidade}. Sinal fraco. Se decidir operar, reduza o tamanho da posição (Qtd = 1) e use Stop Loss obrigatório.`;
+    } else {
+        mensagemRiscos = dados.riscos || 'Riscos não identificados. Sinal forte.';
+    }
+    
+    analiseEl.innerHTML = `<strong style="color:${cor}">🧠 filipa analisa:</strong> ${dados.justificativa}<br><br><strong style="color:#ff4444">⚠️ Riscos:</strong> ${mensagemRiscos}`;
+}
         const actions = document.getElementById('actionButtons');
         if (actions) {
             actions.style.display = 'flex';
