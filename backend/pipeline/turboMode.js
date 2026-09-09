@@ -58,7 +58,7 @@ function calcularQuantSimplificado(candles, visionData) {
   return {
     score,
     rsi,
-    confidence: 70, // Base para OTC
+    confidence: null, // Base para OTC
     candles_validos: candles.length,
     direcao_quant: score > 0 ? 'COMPRA' : score < 0 ? 'VENDA' : 'NEUTRO',
     fonte: 'turbo_otc'

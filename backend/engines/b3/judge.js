@@ -1,20 +1,22 @@
 const logger = require('../../utils/logger');
-const groqService = require('../../services/groq');
-const prompts = require('../../config/prompts');
+const motor = require('../motor'); // Importa o Motor de Decisão
 
 async function execute(data, requestId, config) {
     const { visao, quant, contexto } = data;
-    logger.info('[B3 Judge] Decisão com IA (Claude/Groq) + RISK GATE', { requestId });
+    logger.info('[B3 Judge] Decisão usando MOTOR MATEMÁTICO', { requestId });
     
     const score = quant.score || 0;
     const rsi = quant.rsi || 50;
-    const confianca = quant.confidence || 70;
+    const tendencia = contexto?.tendencia_macro || quant.tendencia || 'LATERAL';
     
-    let direcao = 'NEUTRO';
-    let qualidade = 'C';
+    // 🔥 USANDO O MOTOR PARA CALCULAR TUDO
+    const scoreFinal = motor.calcularScore({ tendencia, rsi });
+    const confianca = motor.calcularConfidence(scoreFinal);
+    const qualidade = motor.calcularQualidade(scoreFinal, confianca, true);
+    const direcao = motor.calcularDirecao(scoreFinal);
     
+    // 🔥 RISK GATE (Validação de dados e tendência)
     const ancoragemValida = contexto?.ancoragem_valida !== false;
-    const tendenciaMacro = contexto?.tendencia_macro || 'LATERAL';
     
     if (!ancoragemValida) {
         return {
@@ -23,87 +25,23 @@ async function execute(data, requestId, config) {
             qualidade: 'D',
             timing: 'BLOQUEADO',
             justificativa: '⚠️ Dados reais divergem da imagem. Operação bloqueada.',
-            estrategia: {
-                preco_atual: null,
-                stop_loss: null,
-                alvo1: null,
-                entrada: 'BLOQUEADO',
-                points_mode: false
-            }
+            estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'BLOQUEADO', points_mode: false }
         };
     }
-
-    if (tendenciaMacro === 'ALTA' && direcao === 'VENDA') {
-        return {
-            direcao: 'VENDA',
-            confianca: confianca - 20,
-            qualidade: 'C',
-            timing: 'BLOQUEADO',
-            justificativa: `⚠️ Venda contra tendência macro (${tendenciaMacro}). Operação bloqueada.`,
-            estrategia: {
-                preco_atual: null,
-                stop_loss: null,
-                alvo1: null,
-                entrada: 'BLOQUEADO',
-                points_mode: false
-            }
-        };
-    }
-    if (tendenciaMacro === 'BAIXA' && direcao === 'COMPRA') {
-        return {
-            direcao: 'COMPRA',
-            confianca: confianca - 20,
-            qualidade: 'C',
-            timing: 'BLOQUEADO',
-            justificativa: `⚠️ Compra contra tendência macro (${tendenciaMacro}). Operação bloqueada.`,
-            estrategia: {
-                preco_atual: null,
-                stop_loss: null,
-                alvo1: null,
-                entrada: 'BLOQUEADO',
-                points_mode: false
-            }
-        };
-    }
-
-    if (direcao === 'COMPRA' && score < 2) {
-        return {
-            direcao: 'COMPRA',
-            confianca: confianca - 20,
-            qualidade: 'C',
-            timing: 'BLOQUEADO',
-            justificativa: '⚠️ Score positivo insuficiente para compra. Operação bloqueada.',
-            estrategia: {
-                preco_atual: null,
-                stop_loss: null,
-                alvo1: null,
-                entrada: 'BLOQUEADO',
-                points_mode: false
-            }
-        };
-    }
-    if (direcao === 'VENDA' && score > -2) {
-        return {
-            direcao: 'VENDA',
-            confianca: confianca - 20,
-            qualidade: 'C',
-            timing: 'BLOQUEADO',
-            justificativa: '⚠️ Score negativo insuficiente para venda. Operação bloqueada.',
-            estrategia: {
-                preco_atual: null,
-                stop_loss: null,
-                alvo1: null,
-                entrada: 'BLOQUEADO',
-                points_mode: false
-            }
-        };
-    }
-
-    if (score >= 2 && rsi < 40) { direcao = 'COMPRA'; qualidade = 'A'; }
-    else if (score <= -2 && rsi > 60) { direcao = 'VENDA'; qualidade = 'A'; }
-    else if (score > 0) { direcao = 'COMPRA'; qualidade = 'B'; }
-    else if (score < 0) { direcao = 'VENDA'; qualidade = 'B'; }
     
+    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR
+    if (direcao === 'AGUARDAR') {
+        return {
+            direcao: 'AGUARDAR',
+            confianca: confianca,
+            qualidade: qualidade,
+            timing: 'AGUARDAR',
+            justificativa: '⚠️ Não há oportunidade clara no momento. Aguarde um sinal mais forte.',
+            estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'AGUARDAR', points_mode: false }
+        };
+    }
+    
+    // 🔧 CORREÇÃO: Se a IA retornou preço < 1000, provavelmente cortou os zeros
     let preco = visao.preco_atual || 120000;
     if (preco < 1000) {
         preco = preco * 1000;
@@ -117,22 +55,12 @@ async function execute(data, requestId, config) {
     const slPoints = config.risk.default_sl_points || 100;
     const tpPoints = config.risk.default_tp_points || 200;
     
-    let justificativaIA = '';
-    try {
-        const promptJuiz = prompts.juiz.replace('{RSI}', rsi).replace('{SCORE}', score).replace('{TENDENCIA}', tendenciaMacro);
-        const resposta = await groqService.text(promptJuiz, 'qwen/qwen3.6-27b');
-        const parsed = JSON.parse(resposta);
-        justificativaIA = parsed.justificativa || `B3: RSI ${rsi}, Score ${score}, Tendência ${tendenciaMacro}.`;
-    } catch (e) {
-        justificativaIA = `B3: RSI ${rsi}, Score ${score}, Tendência ${tendenciaMacro}.`;
-    }
-    
     return {
         direcao,
         confianca,
         qualidade,
         timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
-        justificativa: justificativaIA,
+        justificativa: `B3: RSI ${rsi}, Score ${scoreFinal}, Tendência ${tendencia}. Confiança calculada pelo motor.`,
         estrategia: {
             preco_atual: preco,
             stop_loss: direcao === 'VENDA' ? preco + slPoints : preco - slPoints,
