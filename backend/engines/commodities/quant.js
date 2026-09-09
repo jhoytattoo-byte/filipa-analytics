@@ -21,7 +21,7 @@ async function execute(visionData, requestId, config) {
   const result = {
     score,
     rsi,
-    confidence: 70,
+    confidence: null,
     candles_validos: candles.length,
     direcao_quant: score > 0 ? 'COMPRA' : score < 0 ? 'VENDA' : 'NEUTRO',
     percent_mode: true
