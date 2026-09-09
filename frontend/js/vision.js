@@ -376,10 +376,16 @@ const Vision = {
         const panel = document.getElementById('resultPanel');
         if (!panel) return;
 
+        if (dados.direcao === 'AGUARDAR') {
+            this.mostrarStatus('warning', '⏳ Aguardando sinal mais forte. Não operar.');
+            panel.style.display = 'none';
+            return;
+        }
+
         const agora = new Date().toLocaleTimeString('pt-BR');
         const cor = dados.direcao === 'COMPRA' ? '#00ff88' : dados.direcao === 'VENDA' ? '#ff4444' : '#ffaa00';
 
-        panel.style.display = 'block'; 
+        panel.style.display = 'block';
         panel.classList.add('active');
 
         const tsEl = document.getElementById('resultTimestamp');
@@ -392,10 +398,10 @@ const Vision = {
         if (dirEl) dirEl.innerHTML = `<span class="direction-badge ${dados.direcao.toLowerCase()}">${dados.direcao}</span>`;
 
         const confEl = document.getElementById('resConfianca');
-        if (confEl) { 
+        if (confEl) {
             const confDisplay = dados.direcao === 'COMPRA' ? dados.probBuy : dados.direcao === 'VENDA' ? dados.probSell : dados.confianca;
-            confEl.textContent = confDisplay + '%'; 
-            confEl.style.color = cor; 
+            confEl.textContent = confDisplay + '%';
+            confEl.style.color = cor;
         }
 
         const scoreEl = document.getElementById('resScore');
