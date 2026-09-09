@@ -1,8 +1,10 @@
 const logger = require('../../utils/logger');
+const groqService = require('../../services/groq');
+const prompts = require('../../config/prompts');
 
 async function execute(data, requestId, config) {
     const { visao, quant, contexto } = data;
-    logger.info('[B3 Judge] Decisão com cálculo em PONTOS + RISK GATE', { requestId });
+    logger.info('[B3 Judge] Decisão com IA (Claude/Groq) + RISK GATE', { requestId });
     
     const score = quant.score || 0;
     const rsi = quant.rsi || 50;
@@ -101,7 +103,7 @@ async function execute(data, requestId, config) {
         };
     }
 
-    // ✅ 4. SE TUDO PASSOU = OPERAÇÃO LIBERADA
+    // ✅ 4. SE TUDO PASSOU = OPERAÇÃO LIBERADA (COM IA)
     if (score >= 2 && rsi < 40) { direcao = 'COMPRA'; qualidade = 'A'; }
     else if (score <= -2 && rsi > 60) { direcao = 'VENDA'; qualidade = 'A'; }
     else if (score > 0) { direcao = 'COMPRA'; qualidade = 'B'; }
@@ -122,12 +124,23 @@ async function execute(data, requestId, config) {
     const slPoints = config.risk.default_sl_points || 100;
     const tpPoints = config.risk.default_tp_points || 200;
     
+    // 🔥 ATIVA O CLAUDE/GROQ TEXT PARA INTERPRETAR (Variação Dinâmica)
+    let justificativaIA = '';
+    try {
+        const promptJuiz = prompts.juiz.replace('{RSI}', rsi).replace('{SCORE}', score).replace('{TENDENCIA}', tendenciaMacro);
+        const resposta = await groqService.text(promptJuiz, 'llama-3.1-70b-versatile');
+        const parsed = JSON.parse(resposta);
+        justificativaIA = parsed.justificativa || `B3: RSI ${rsi}, Score ${score}, Tendência ${tendenciaMacro}.`;
+    } catch (e) {
+        justificativaIA = `B3: RSI ${rsi}, Score ${score}, Tendência ${tendenciaMacro}.`;
+    }
+    
     return {
         direcao,
         confianca,
         qualidade,
         timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
-        justificativa: `B3: RSI ${rsi}, Score ${score}, Tendência ${tendenciaMacro}. SL ${slPoints}pts, TP ${tpPoints}pts.`,
+        justificativa: justificativaIA,
         estrategia: {
             preco_atual: preco,
             stop_loss: direcao === 'VENDA' ? preco + slPoints : preco - slPoints,

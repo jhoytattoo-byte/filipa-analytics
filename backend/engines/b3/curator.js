@@ -1,8 +1,10 @@
 const logger = require('../../utils/logger');
 const { getMarketData } = require('../../services/dataService');
+const groqService = require('../../services/groq');
+const prompts = require('../../config/prompts');
 
 async function execute(visionData, requestId, config) {
-  logger.info('[B3 Curator] Contexto B3/CEI + Validação de Dados', { requestId });
+  logger.info('[B3 Curator] Contexto B3 + Validação de Dados + IA (DeepSeek/Groq)', { requestId });
   
   // Força o cálculo da hora no fuso horário de Brasília
   const dataBrasilia = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
@@ -39,6 +41,17 @@ async function execute(visionData, requestId, config) {
     }
   }
 
+  // 🔥 ATIVA DEEPSEEK/GROQ TEXT PARA CONTEXTO MACRO (Variação Dinâmica)
+  let contextoIA = '';
+  try {
+    const promptCurador = prompts.curador;
+    const resposta = await groqService.text(promptCurador, 'llama-3.1-70b-versatile');
+    const parsed = JSON.parse(resposta);
+    contextoIA = parsed.opiniao || '';
+  } catch (e) {
+    contextoIA = '';
+  }
+
   return {
     regime: 'LATERAL',
     volatilidade: 'NORMAL',
@@ -51,7 +64,10 @@ async function execute(visionData, requestId, config) {
     dados_reais: dadosReais,
     ancoragem_valida: ancoragemValida,
     tendencia_macro: tendenciaMacro,
-    preco_real: dadosReais ? dadosReais.preco_real : null
+    preco_real: dadosReais ? dadosReais.preco_real : null,
+    
+    // 🔥 OPINIÃO DA IA (Contexto Macro)
+    opiniao_ia: contextoIA
   };
 }
 
