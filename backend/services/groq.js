@@ -1,5 +1,5 @@
 // ============================================================
-// SERVICE — GROQ (COM FALLBACK ESTRATÉGICO)
+// SERVICE — GROQ (COM FALLBACK ESTRATÉGICO) - CORRIGIDO v18.3
 // ============================================================
 // ESTRATÉGIA DE CUSTO:
 // 1º: Groq (GRÁTIS) → 2º: Gemini (GRÁTIS) → 3º: Qwen (PAGO)
@@ -15,9 +15,11 @@ const groq = new Groq({ apiKey: config.groq.apiKey });
 
 async function vision(image, model) {
     // ============================================================
-    // 🟢 PRIORIDADE 1: GROQ (GRÁTIS)
+    // 🟢 PRIORIDADE 1: GROQ VISION (GRÁTIS)
     // ============================================================
-    const modelName = model || config.groq.visionModel || 'qwen/qwen3.6-27b';
+    // ATENÇÃO: Para visão, usamos o MODELO DE VISÃO (qwen3-vl-flash),
+    // NÃO o modelo de texto (qwen/qwen3.6-27b)!
+    const modelName = model || config.groq.visionModel || 'qwen3-vl-flash';
     
     try {
         console.log(`[Vision] 🟢 PRIORIDADE 1: Groq Vision (GRÁTIS) com ${modelName}`);
@@ -32,7 +34,7 @@ async function vision(image, model) {
                 ]}
             ],
             temperature: config.groq.temperature || 0,
-            max_tokens: config.groq.maxTokens || 4096,
+            max_tokens: 800, // ✅ Reduzido para não estourar o limite
             response_format: { type: 'json_object' },
             reasoning_format: 'hidden'
         });
@@ -90,7 +92,7 @@ async function text(prompt, model) {
                 { role: 'user', content: prompt }
             ],
             temperature: config.groq.temperature || 0,
-            max_tokens: config.groq.maxTokens || 4096
+            max_tokens: 800, // ✅ REDUZIDO (limite gratuito é 1000)
         });
         
         console.log('[Vision] ✅ Groq Text OK (GRÁTIS!)');
