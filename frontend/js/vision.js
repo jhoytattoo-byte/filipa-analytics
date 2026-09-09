@@ -376,6 +376,13 @@ const Vision = {
         const panel = document.getElementById('resultPanel');
         if (!panel) return;
 
+                // 🔥 SE A DIREÇÃO FOR "AGUARDAR", MOSTRA A JUSTIFICATIVA
+        if (dados.direcao === 'AGUARDAR') {
+            this.mostrarStatus('warning', `⏳ ${dados.justificativa || 'Aguardando sinal mais forte.'}`);
+            panel.style.display = 'none';
+            return;
+        }
+
         if (dados.direcao === 'AGUARDAR') {
             this.mostrarStatus('warning', '⏳ Aguardando sinal mais forte. Não operar.');
             panel.style.display = 'none';
