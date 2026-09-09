@@ -1,9 +1,10 @@
 ﻿// ============================================================
-// CONFIG — AI v18.0 (CORRIGIDO: Modelos atualizados)
+// CONFIG — AI v18.1 (CORRIGIDO FINALMENTE)
 // ============================================================
-// CHANGELOG v18.0:
-// - llama-3.1-70b-versatile → DESCONTINUADO pela Groq
-// - llama-3.3-70b-versatile → Modelo atualizado para texto
+// CHANGELOG v18.1:
+// - llama-3.1-70b-versatile → DESCONTINUADO
+// - llama-3.3-70b-versatile → DESCONTINUADO (16/08/2026)
+// - qwen/qwen3.6-27b → ✅ MODELO ATUAL E DISPONÍVEL NA GROQ
 // ============================================================
 
 module.exports = {
@@ -11,8 +12,6 @@ module.exports = {
     primary: 'groq',
     fallbacks: ['openai', 'gemini', 'claude'],
     models: {
-      // ⚠️  MODELO DE VISÃO: DEVE suportar imagens!
-      //     qwen/qwen3.6-27b = ÚNICO modelo vision disponível na Groq
       groq: 'qwen/qwen3.6-27b',
       openai: 'gpt-4o-mini',
       gemini: 'gemini-2.0-flash-exp',
@@ -21,21 +20,18 @@ module.exports = {
   },
 
   curator: {
-    primary: 'deepseek',
-    fallbacks: ['groq_text'],
+    primary: 'groq',
+    fallbacks: [],
     models: {
-      deepseek: 'deepseek-v4-flash',
-      groq_text: 'llama-3.3-70b-versatile'  // ✅ ATUALIZADO!
+      groq: 'qwen/qwen3.6-27b'  // ✅ ATUALIZADO
     }
   },
 
   judge: {
-    primary: 'claude',
-    fallbacks: ['deepseek', 'groq_text'],
+    primary: 'groq',
+    fallbacks: [],
     models: {
-      claude: 'claude-haiku-4-5-20251001',
-      deepseek: 'deepseek-v4-flash',
-      groq_text: 'llama-3.3-70b-versatile'  // ✅ ATUALIZADO!
+      groq: 'qwen/qwen3.6-27b'  // ✅ ATUALIZADO
     }
   },
 

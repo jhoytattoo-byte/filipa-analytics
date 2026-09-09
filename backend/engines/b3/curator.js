@@ -38,7 +38,7 @@ async function execute(visionData, requestId, config) {
   let contextoIA = '';
   try {
     const promptCurador = prompts.curador;
-    const resposta = await groqService.text(promptCurador); // ✅ SEM 'llama-3.1'
+    const resposta = await groqService.text(promptCurador, 'qwen/qwen3.6-27b');
     const parsed = JSON.parse(resposta);
     contextoIA = parsed.opiniao || '';
   } catch (e) {

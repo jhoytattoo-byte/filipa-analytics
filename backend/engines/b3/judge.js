@@ -120,7 +120,7 @@ async function execute(data, requestId, config) {
     let justificativaIA = '';
     try {
         const promptJuiz = prompts.juiz.replace('{RSI}', rsi).replace('{SCORE}', score).replace('{TENDENCIA}', tendenciaMacro);
-        const resposta = await groqService.text(promptJuiz); // ✅ SEM 'llama-3.1'
+        const resposta = await groqService.text(promptJuiz, 'qwen/qwen3.6-27b');
         const parsed = JSON.parse(resposta);
         justificativaIA = parsed.justificativa || `B3: RSI ${rsi}, Score ${score}, Tendência ${tendenciaMacro}.`;
     } catch (e) {

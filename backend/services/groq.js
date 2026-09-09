@@ -81,7 +81,7 @@ async function text(prompt, model) {
     // 🟢 PRIORIDADE 1: GROQ TEXT (GRÁTIS)
     // ============================================================
     try {
-        const modelName = model || config.groq.textModel || 'llama-3.3-70b-versatile';
+        const modelName = model || config.groq.textModel || 'qwen/qwen3.6-27b';
         
         const response = await groq.chat.completions.create({
             model: modelName,
