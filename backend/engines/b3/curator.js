@@ -46,8 +46,9 @@ async function execute(visionData, requestId, config) {
   }
 
   return {
-    regime: 'LATERAL',
-    volatilidade: 'NORMAL',
+    // ✅ AGORA É DINÂMICO!
+    regime: tendenciaMacro, // ✅ Baseado na tendência macro real
+    volatilidade: dadosReais?.volatilidade || 'NORMAL', // ✅ Dinâmico
     sessao: sessao,
     noticias: dadosReais ? 'Dados reais obtidos' : 'Sem dados reais',
     source: dadosReais ? dadosReais.fonte : 'local_default',

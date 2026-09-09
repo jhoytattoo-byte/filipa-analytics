@@ -5,23 +5,12 @@ async function execute(data, requestId, config) {
     const { visao, quant, contexto } = data;
     logger.info('[B3 Judge] Decisão usando MOTOR MATEMÁTICO', { requestId });
     
-    const score = quant.score || 0;
+    // ✅ USANDO O SCORE ÚNICO DO QUANT (NÃO RECALCULA!)
+    const scoreFinal = quant.score || 0;
     const rsi = quant.rsi || 50;
     const tendencia = contexto?.tendencia_macro || quant.tendencia || 'LATERAL';
     
-    // 🔥 ENTRADA COMPLETA DO MOTOR
-    const indicadores = {
-        tendencia,
-        rsi,
-        macd: quant.macd || 0,
-        vwap_status: quant.vwap_status || 'lateral',
-        volume_status: quant.volume_status || 'neutro',
-        suporte_status: quant.suporte_status || 'neutro',
-        resistencia_status: quant.resistencia_status || 'neutro'
-    };
-    
-    // 🔥 USANDO O MOTOR PARA CALCULAR A DECISÃO
-    const scoreFinal = motor.calcularScore(indicadores);
+    // ✅ CALCULANDO A DECISÃO COM O SCORE DO QUANT
     const confianca = motor.calcularConfidence(scoreFinal);
     const qualidade = motor.calcularQualidade(scoreFinal, confianca, true);
     const direcao = motor.calcularDirecao(scoreFinal);
@@ -48,7 +37,7 @@ async function execute(data, requestId, config) {
             confianca: confianca,
             qualidade: qualidade,
             timing: 'AGUARDAR',
-            justificativa: justificativa, // ✅ JUSTIFICATIVA DO MOTOR
+            justificativa: justificativa,
             estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'AGUARDAR', points_mode: false }
         };
     }
