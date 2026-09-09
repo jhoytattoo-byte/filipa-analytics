@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // SERVICE — GROQ (COM FALLBACK ESTRATÉGICO)
 // ============================================================
 // ESTRATÉGIA DE CUSTO:
@@ -25,30 +25,16 @@ async function vision(image, model) {
         const response = await groq.chat.completions.create({
             model: modelName,
             messages: [
-                {
-                    role: 'system',
-                    content: prompts.vision
-                },
-                {
-                    role: 'user',
-                    content: [
-                        { 
-                            type: 'text', 
-                            text: 'Extraia os dados do gráfico e retorne APENAS JSON válido.' 
-                        },
-                        { 
-                            type: 'image_url', 
-                            image_url: { 
-                                url: 'data:image/png;base64,' + image 
-                            } 
-                        }
-                    ]
-                }
+                { role: 'system', content: prompts.vision },
+                { role: 'user', content: [
+                    { type: 'text', text: 'Extraia os dados do gráfico e retorne APENAS JSON válido.' },
+                    { type: 'image_url', image_url: { url: 'data:image/png;base64,' + image } }
+                ]}
             ],
             temperature: config.groq.temperature || 0,
             max_tokens: config.groq.maxTokens || 4096,
             response_format: { type: 'json_object' },
-            reasoning_format: 'hidden'  // Evita erro 400
+            reasoning_format: 'hidden'
         });
         
         console.log('[Vision] ✅ Groq OK (GRÁTIS!)');
@@ -100,14 +86,8 @@ async function text(prompt, model) {
         const response = await groq.chat.completions.create({
             model: modelName,
             messages: [
-                { 
-                    role: 'system', 
-                    content: 'Você é FILIPA, uma IA especialista em trading.' 
-                },
-                { 
-                    role: 'user', 
-                    content: prompt 
-                }
+                { role: 'system', content: 'Você é FILIPA, uma IA especialista em trading.' },
+                { role: 'user', content: prompt }
             ],
             temperature: config.groq.temperature || 0,
             max_tokens: config.groq.maxTokens || 4096
@@ -125,7 +105,6 @@ async function text(prompt, model) {
     // ============================================================
     try {
         console.log('[Vision] 🟢 Gemini Text (GRÁTIS)');
-        // Implementar se necessário
         throw new Error('Gemini text não implementado');
         
     } catch (error) {
@@ -134,8 +113,7 @@ async function text(prompt, model) {
 
     // ============================================================
     // 🔴 PRIORIDADE 3: QWEN TEXT (PAGO) - ❌ REMOVIDO
-    // O Qwen é uma IA de VISÃO, não de texto. 
-    // Tentar usar qwenService.vision(prompt) gera o erro 'base64 decode fail'.
+    // O Qwen é uma IA de VISÃO, não de texto.
     // ============================================================
 
     throw new Error('Todos os serviços de texto falharam');
