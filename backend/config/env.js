@@ -17,7 +17,7 @@ const config = {
     groq: {
         apiKey: process.env.GROQ_API_KEY,
         visionModel: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.6-27b',
-        textModel: process.env.GROQ_TEXT_MODEL || 'llama-3.1-70b-versatile',
+        textModel: process.env.GROQ_TEXT_MODEL || 'llama-3.3-70b-versatile',
         maxTokens: parseInt(process.env.GROQ_MAX_TOKENS) || 4096,
         temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0
     },
