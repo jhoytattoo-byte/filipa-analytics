@@ -1,5 +1,5 @@
 ﻿// ============================================================
-// PIPELINE v18.0 — Multi-Mercado com Router Dinâmico
+// PIPELINE v18.1 — Multi-Mercado com Router Dinâmico
 // ============================================================
 const router = require('./router');
 const logger = require('../utils/logger');
@@ -51,7 +51,7 @@ async function execute(imageBase64, requestId, marketKey = 'otc') {
         },
         quant: {
           score: quant.score,
-          confidence: quant.confidence,
+          confidence: decisao.confianca,  // ✅ USANDO A CONFIANÇA DO JUDGE (CORRETO!)
           rsi: quant.rsi,
           candles_validos: quant.candles_validos,
           direcao_quant: quant.direcao_quant
