@@ -95,7 +95,7 @@ async function text(prompt, model) {
     // 🟢 PRIORIDADE 1: GROQ TEXT (GRÁTIS)
     // ============================================================
     try {
-        const modelName = model || config.groq.textModel || 'llama-3.1-70b-versatile';
+        const modelName = model || config.groq.textModel || 'llama-3.3-70b-versatile';
         
         const response = await groq.chat.completions.create({
             model: modelName,
@@ -133,16 +133,10 @@ async function text(prompt, model) {
     }
 
     // ============================================================
-    // 🔴 PRIORIDADE 3: QWEN TEXT (PAGO)
+    // 🔴 PRIORIDADE 3: QWEN TEXT (PAGO) - ❌ REMOVIDO
+    // O Qwen é uma IA de VISÃO, não de texto. 
+    // Tentar usar qwenService.vision(prompt) gera o erro 'base64 decode fail'.
     // ============================================================
-    try {
-        console.log('[Vision] 🔴 Qwen Text (PAGO) - Último recurso');
-        const response = await qwenService.vision(prompt);
-        return response;
-        
-    } catch (error) {
-        console.error('[Vision] ❌ Qwen Text falhou:', error.message);
-    }
 
     throw new Error('Todos os serviços de texto falharam');
 }
