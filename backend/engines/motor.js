@@ -1,45 +1,43 @@
 // ============================================================
-// MOTOR DE DECISÃO — v19.0 (Matemática Pura)
+// MOTOR DE DECISÃO — v19.1 (Matemática Pura, SEM DEPENDER DA IA)
 // ============================================================
-// A IA interpreta, mas a MATEMÁTICA decide.
-// Este motor calcula a confiança (45% - 95%) e a qualidade (A, B, C, D).
 
 function calcularScore(indicadores) {
     let score = 0;
     
-    // Tendência
-    if (indicadores.tendencia === 'ALTA') score += 2;
-    if (indicadores.tendencia === 'BAIXA') score -= 2;
+    // Tendência (peso 3)
+    if (indicadores.tendencia === 'ALTA') score += 3;
+    if (indicadores.tendencia === 'BAIXA') score -= 3;
     
-    // RSI
-    if (indicadores.rsi < 30) score += 2;  // Sobrecomprado (oportunidade de compra)
-    if (indicadores.rsi > 70) score -= 2;  // Sobrecomprado (oportunidade de venda)
-    if (indicadores.rsi >= 50 && indicadores.rsi <= 70) score += 1; // Tendência de alta
-    if (indicadores.rsi < 50 && indicadores.rsi >= 30) score -= 1; // Tendência de baixa
+    // RSI (peso 2)
+    if (indicadores.rsi < 30) score += 2;  // Sobrecomprado
+    if (indicadores.rsi > 70) score -= 2;  // Sobrecomprado
+    if (indicadores.rsi >= 50 && indicadores.rsi <= 70) score += 1; // Forte alta
+    if (indicadores.rsi < 50 && indicadores.rsi >= 30) score -= 1; // Forte baixa
     
-    // MACD (se existir)
+    // MACD (peso 2)
     if (indicadores.macd > 0) score += 2;
     if (indicadores.macd < 0) score -= 2;
     
-    // VWAP (se existir)
+    // VWAP (peso 2)
     if (indicadores.vwap_status === 'acima') score += 2;
     if (indicadores.vwap_status === 'abaixo') score -= 2;
     
-    // Volume (se existir)
+    // Volume (peso 1)
     if (indicadores.volume_status === 'crescente') score += 1;
     if (indicadores.volume_status === 'decrescente') score -= 1;
     
-    // Suporte/Resistência (se existir)
+    // Suporte/Resistência (peso 1)
     if (indicadores.suporte_status === 'forte') score += 1;
     if (indicadores.resistencia_status === 'forte') score -= 1;
     
-    return score;
+    return Math.max(-15, Math.min(15, score)); // Limite máximo de -15 a +15
 }
 
 function calcularConfidence(score) {
-    // Converte score em confiança (0 a 100)
+    // Converte score em confiança (45% a 95%)
     let confidence = 50;
-    confidence += score * 5;
+    confidence += score * 4;
     
     return Math.max(45, Math.min(95, confidence));
 }
@@ -57,4 +55,11 @@ function calcularDirecao(score) {
     return 'AGUARDAR';
 }
 
-module.exports = { calcularScore, calcularConfidence, calcularQualidade, calcularDirecao };
+function calcularJustificativa(score, direcao) {
+    if (direcao === 'AGUARDAR') {
+        return `Score ${score} (fraco). Sem confluência de indicadores. Aguarde um sinal mais forte com score ≥ +5 ou ≤ -5.`;
+    }
+    return `Score ${score}. Confluência de indicadores detectada.`;
+}
+
+module.exports = { calcularScore, calcularConfidence, calcularQualidade, calcularDirecao, calcularJustificativa };

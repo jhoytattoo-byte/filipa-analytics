@@ -1,5 +1,5 @@
 const logger = require('../../utils/logger');
-const motor = require('../motor'); // Importa o Motor de Decisão
+const motor = require('../motor'); // ✅ Importa o Motor de Decisão
 
 async function execute(data, requestId, config) {
     const { visao, quant, contexto } = data;
@@ -9,11 +9,23 @@ async function execute(data, requestId, config) {
     const rsi = quant.rsi || 50;
     const tendencia = contexto?.tendencia_macro || quant.tendencia || 'LATERAL';
     
-    // 🔥 USANDO O MOTOR PARA CALCULAR TUDO
-    const scoreFinal = motor.calcularScore({ tendencia, rsi });
+    // 🔥 ENTRADA COMPLETA DO MOTOR
+    const indicadores = {
+        tendencia,
+        rsi,
+        macd: quant.macd || 0,
+        vwap_status: quant.vwap_status || 'lateral',
+        volume_status: quant.volume_status || 'neutro',
+        suporte_status: quant.suporte_status || 'neutro',
+        resistencia_status: quant.resistencia_status || 'neutro'
+    };
+    
+    // 🔥 USANDO O MOTOR PARA CALCULAR A DECISÃO
+    const scoreFinal = motor.calcularScore(indicadores);
     const confianca = motor.calcularConfidence(scoreFinal);
     const qualidade = motor.calcularQualidade(scoreFinal, confianca, true);
     const direcao = motor.calcularDirecao(scoreFinal);
+    const justificativa = motor.calcularJustificativa(scoreFinal, direcao);
     
     // 🔥 RISK GATE (Validação de dados e tendência)
     const ancoragemValida = contexto?.ancoragem_valida !== false;
@@ -29,14 +41,14 @@ async function execute(data, requestId, config) {
         };
     }
     
-    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR
+    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR COM JUSTIFICATIVA
     if (direcao === 'AGUARDAR') {
         return {
             direcao: 'AGUARDAR',
             confianca: confianca,
             qualidade: qualidade,
             timing: 'AGUARDAR',
-            justificativa: '⚠️ Não há oportunidade clara no momento. Aguarde um sinal mais forte.',
+            justificativa: justificativa, // ✅ JUSTIFICATIVA DO MOTOR
             estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'AGUARDAR', points_mode: false }
         };
     }
@@ -60,7 +72,7 @@ async function execute(data, requestId, config) {
         confianca,
         qualidade,
         timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
-        justificativa: `B3: RSI ${rsi}, Score ${scoreFinal}, Tendência ${tendencia}. Confiança calculada pelo motor.`,
+        justificativa: justificativa,
         estrategia: {
             preco_atual: preco,
             stop_loss: direcao === 'VENDA' ? preco + slPoints : preco - slPoints,
