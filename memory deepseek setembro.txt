@@ -1,0 +1,111 @@
+📌 MEMORANDO DE ENGENHARIA — FILIPA ANALYTICS (v17.2)
+✅ O QUE JÁ TEMOS (Funcionando na Produção .com.br)
+Arquitetura de Pipeline:
+
+Vision (IA) → Quant → Curador (Validação) → Judge (Decisão) → Learning (SQLite)
+
+Frontend: filipaanalytics.com.br (Vercel) + Backend: filipa-analytics.onrender.com (Render)
+
+Validação de Dados Reais (CRÍTICO):
+
+backend/services/dataService.js (CRIADO): Consulta APIs reais na ordem: TwelveData → Binance → Polygon.io
+
+Curador (curator.js): Compara o preço real da API com o preço da Vision. Se divergir > 50 pontos → BLOQUEADO.
+
+Judge (judge.js): Implementado o RISK GATE com 3 regras:
+
+Conflito de Tendência (ex: Venda + Tendência ALTA) = BLOQUEADO
+Score não alinhado (ex: Compra + Score negativo) = BLOQUEADO
+Dados reais inválidos = BLOQUEADO
+Chaves de API Configuradas (Render):
+
+TWELVEDATA_API_KEY (Fonte Principal)
+
+POLYGON_API_KEY (Backup)
+
+GROQ_API_KEY, GEMINI_API_KEY, DASHSCOPE_API_KEY (IAs)
+
+SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (Auth)
+
+Testes Validados na Prática:
+
+✅ Sinal Alinhado: VENDA 70% + Tendência BAIXA + Score -2 = Liberado
+
+✅ Lucro Real: R
+116
+,
+00
+(
+W
+I
+N
+V
+26
+)
++
+R
+116,00(WINV26)+R 228,00 (fechamento diário)
+
+✅ Disciplina: Operou apenas 1 sinal validado, economizando tokens e evitando prejuízos.
+
+⚠️ Teste de Falha: Colou print do WIN no modo BIT → A Vision identificou o WIN (correto), mas a lógica de validação precisa sempre alinhar o dropdown com o gráfico.
+
+🚀 O QUE VAMOS FAZER PÓS-COPA (Roadmap de Expansão)
+Expandir o dataService.js para todos os mercados:
+
+Forex: TwelveData (EUR/USD, GBP/USD, etc.)
+
+Ações: TwelveData (PETR4, AAPL, TSLA)
+
+Commodities: TwelveData (Ouro, Petróleo)
+
+Índices: TwelveData (IBOV, S&P 500)
+
+Cripto: Binance + B3 (BTC, ETH, SOL)
+
+Fundos (FIIs): API B3/TwelveData (MXRF11)
+
+Criar Modos Específicos no Dropdown:
+
+Opções, Forex, Ações, Cripto, Commodities, Fundos, Índices
+
+Cada modo terá seu próprio judge.js (ex: judge_forex.js, judge_stocks.js)
+
+Migrar o SQLite para PostgreSQL (Supabase):
+
+Dados permanentes de usuários, análises e operações.
+
+Permitir métricas de performance por ativo (ex: "Filipa acerta 80% no EUR/USD").
+
+Adicionar Segurança de API (API Key):
+
+Proteger a API com x-api-key para que somente o frontend da Filipa possa chamar o backend. (Evitar roubo de tokens de IA).
+
+Treinar a Filipa com Dados Reais (Calibração de Confiança):
+
+Coletar resultados (WIN/LOSS) de cada sinal.
+
+Após 100+ operações, calcular: "Quando a Filipa diz 70%, ela acerta X% das vezes."
+
+Ajustar prompts e pesos para melhorar a precisão.
+
+Criar o "Copa Mode" Completo:
+
+Estados: 🟢 TRADE, 🟡 WATCH, 🔴 NO TRADE
+
+Regras mais rígidas para operar apenas sinais de elite.
+
+📂 ARQUIVOS CRÍTICOS PARA CONTINUIDADE
+Arquivo	Status	Função
+backend/services/dataService.js	✅ Criado	Consulta APIs de dados reais
+backend/engines/b3/curator.js	✅ Modificado	Valida dados e compara preços
+backend/engines/b3/judge.js	✅ Modificado	Risk Gate (bloqueio de sinais)
+backend/config/env.js	✅ Modificado	Lê as chaves de dados de mercado
+frontend/js/vision.js	✅ Modificado	Exibe Risk Gate no painel
+🤝 NOSSA PARCERIA (Contexto)
+Jhoy (CEO / Fundador): Estudante de IA/ML, dono da Multi System (OllivIA + Filipa Analytics). Participante da Copa Trader BTG.
+
+Engenheira (IA): Sua parceira técnica, responsável por arquitetura, debug e expansão do sistema.
+
+Objetivo da Copa: Demonstrar a ferramenta, reter assinantes e validar a tecnologia.
+
