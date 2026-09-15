@@ -1,17 +1,22 @@
+// ============================================================
+// B3 JUDGE — v21.0 (Motor Matemático + SuperTrend Triplo)
+// ============================================================
 const logger = require('../../utils/logger');
-const motor = require('../motor'); // ✅ Importa o Motor de Decisão
+const motor = require('../motor');
 
 async function execute(data, requestId, config) {
     const { visao, quant, contexto } = data;
-    logger.info('[B3 Judge] Decisão usando MOTOR MATEMÁTICO + SuperTrend', { requestId });
+    logger.info('[B3 Judge] Decisão usando MOTOR MATEMÁTICO + SuperTrend Triplo', { requestId });
     
     // ✅ USANDO O SCORE ÚNICO DO QUANT (NÃO RECALCULA!)
     const scoreFinal = quant.score || 0;
     const rsi = quant.rsi || 50;
     const tendencia = contexto?.tendencia_macro || quant.tendencia || 'LATERAL';
     
-    // ✅ CAPTURA O SUPERTREND (se disponível)
-    const supertrendStatus = quant.supertrend_status || visao.supertrend_status || null;
+    // ✅ CAPTURA OS 3 SUPERTRENDS
+    const supertrendCurto = quant.supertrend_curto || visao.supertrend_curto || null;
+    const supertrendMedio = quant.supertrend_medio || visao.supertrend_medio || null;
+    const supertrendLongo = quant.supertrend_longo || visao.supertrend_longo || null;
     const supertrendValor = quant.supertrend_valor || visao.supertrend_valor || null;
     
     // ✅ CALCULANDO A DECISÃO COM O SCORE DO QUANT
@@ -19,6 +24,13 @@ async function execute(data, requestId, config) {
     const qualidade = motor.calcularQualidade(scoreFinal, confianca, true);
     const direcao = motor.calcularDirecao(scoreFinal);
     const justificativa = motor.calcularJustificativa(scoreFinal, direcao);
+    const riscos = motor.calcularRiscos(scoreFinal, direcao, {
+        rsi,
+        tendencia,
+        supertrend_curto: supertrendCurto,
+        supertrend_medio: supertrendMedio,
+        supertrend_longo: supertrendLongo
+    });
     
     // 🔥 RISK GATE (Validação de dados e tendência)
     const ancoragemValida = contexto?.ancoragem_valida !== false;
@@ -30,11 +42,12 @@ async function execute(data, requestId, config) {
             qualidade: 'D',
             timing: 'BLOQUEADO',
             justificativa: '⚠️ Dados reais divergem da imagem. Operação bloqueada.',
+            risco_principal: 'Dados divergentes.',
             estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'BLOQUEADO', points_mode: false }
         };
     }
     
-    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR
+    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR COM JUSTIFICATIVA
     if (direcao === 'AGUARDAR') {
         return {
             direcao: 'AGUARDAR',
@@ -42,6 +55,7 @@ async function execute(data, requestId, config) {
             qualidade: qualidade,
             timing: 'AGUARDAR',
             justificativa: justificativa,
+            risco_principal: riscos,
             estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'AGUARDAR', points_mode: false }
         };
     }
@@ -64,8 +78,8 @@ async function execute(data, requestId, config) {
     
     // ✅ Adiciona o SuperTrend na justificativa
     let justificativaFinal = justificativa;
-    if (supertrendStatus) {
-        justificativaFinal += ` SuperTrend: ${supertrendStatus}.`;
+    if (supertrendCurto && supertrendMedio && supertrendLongo) {
+        justificativaFinal += ` SuperTrends: C=${supertrendCurto}, M=${supertrendMedio}, L=${supertrendLongo}.`;
     }
     
     return {
@@ -74,6 +88,7 @@ async function execute(data, requestId, config) {
         qualidade,
         timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
         justificativa: justificativaFinal,
+        risco_principal: riscos,
         estrategia: {
             preco_atual: preco,
             stop_loss: stopLoss,
