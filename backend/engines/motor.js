@@ -1,65 +1,101 @@
 // ============================================================
-// MOTOR DE DECISÃO — v19.1 (Matemática Pura, SEM DEPENDER DA IA)
+// MOTOR DE DECISÃO — v20.0 (Matemática Pura + SuperTrend)
 // ============================================================
 
-function calcularScore(indicadores) {
+function calcularScore(indicadores = {}) {
     let score = 0;
     
-    // Tendência (peso 3)
+    // 1. TENDÊNCIA — peso 3
     if (indicadores.tendencia === 'ALTA') score += 3;
     if (indicadores.tendencia === 'BAIXA') score -= 3;
     
-    // RSI (peso 2)
-    if (indicadores.rsi < 30) score += 2;  // Sobrecomprado
-    if (indicadores.rsi > 70) score -= 2;  // Sobrecomprado
-    if (indicadores.rsi >= 50 && indicadores.rsi <= 70) score += 1; // Forte alta
-    if (indicadores.rsi < 50 && indicadores.rsi >= 30) score -= 1; // Forte baixa
+    // 2. RSI — peso 2
+    const rsi = Number(indicadores.rsi);
+    if (Number.isFinite(rsi)) {
+        if (rsi < 30) score += 2;
+        else if (rsi > 70) score -= 2;
+        else if (rsi >= 55 && rsi <= 70) score += 1;
+        else if (rsi >= 30 && rsi < 45) score -= 1;
+    }
     
-    // MACD (peso 2)
-    if (indicadores.macd > 0) score += 2;
-    if (indicadores.macd < 0) score -= 2;
+    // 3. MACD — peso 2
+    const macd = Number(indicadores.macd);
+    if (Number.isFinite(macd)) {
+        if (macd > 0) score += 2;
+        if (macd < 0) score -= 2;
+    }
     
-    // VWAP (peso 2)
+    // 4. VWAP — peso 2
     if (indicadores.vwap_status === 'acima') score += 2;
     if (indicadores.vwap_status === 'abaixo') score -= 2;
     
-    // Volume (peso 1)
+    // 5. SUPERTREND — peso 3 (NOVO!)
+    if (indicadores.supertrend_status === 'compra') score += 3;
+    if (indicadores.supertrend_status === 'venda') score -= 3;
+    
+    // 6. VOLUME — peso 1
     if (indicadores.volume_status === 'crescente') score += 1;
     if (indicadores.volume_status === 'decrescente') score -= 1;
     
-    // Suporte/Resistência (peso 1)
+    // 7. SUPORTE / RESISTÊNCIA — peso 1
     if (indicadores.suporte_status === 'forte') score += 1;
     if (indicadores.resistencia_status === 'forte') score -= 1;
     
-    return Math.max(-15, Math.min(15, score)); // Limite máximo de -15 a +15
+    return Math.max(-15, Math.min(15, score));
 }
 
 function calcularConfidence(score) {
-    // Converte score em confiança (45% a 95%)
+    const magnitude = Math.abs(Number(score) || 0);
     let confidence = 50;
-    confidence += score * 4;
-    
-    return Math.max(45, Math.min(95, confidence));
+    confidence += magnitude * 4;
+    return Math.max(50, Math.min(95, confidence));
 }
 
-function calcularQualidade(score, confidence, dadosCompletos) {
-    if (dadosCompletos && score >= 8 && confidence >= 80) return 'A';
-    if (score >= 4 && confidence >= 65) return 'B';
-    if (score >= 1 && confidence >= 55) return 'C';
+function calcularQualidade(score, confidence, dadosCompletos = true) {
+    const magnitude = Math.abs(Number(score) || 0);
+    if (dadosCompletos && magnitude >= 8 && confidence >= 80) return 'A';
+    if (magnitude >= 4 && confidence >= 65) return 'B';
+    if (magnitude >= 2 && confidence >= 55) return 'C';
     return 'D';
 }
 
 function calcularDirecao(score) {
-    if (score >= 3) return 'COMPRA';
-    if (score <= -3) return 'VENDA';
+    const valor = Number(score) || 0;
+    // ✅ REGRA CORRETA: Só entra com score >= +5 ou <= -5
+    if (valor >= 5) return 'COMPRA';
+    if (valor <= -5) return 'VENDA';
     return 'AGUARDAR';
 }
 
 function calcularJustificativa(score, direcao) {
+    const valor = Number(score) || 0;
     if (direcao === 'AGUARDAR') {
-        return `Score ${score} (fraco). Sem confluência de indicadores. Aguarde um sinal mais forte com score ≥ +5 ou ≤ -5.`;
+        return `Score ${valor}. Confluência insuficiente para entrada. A FILIPA aguarda score ≥ +5 ou ≤ -5.`;
     }
-    return `Score ${score}. Confluência de indicadores detectada.`;
+    if (direcao === 'COMPRA') {
+        return `Score +${valor}. Confluência compradora suficiente para COMPRA.`;
+    }
+    if (direcao === 'VENDA') {
+        return `Score ${valor}. Confluência vendedora suficiente para VENDA.`;
+    }
+    return `Score ${valor}. Sem direção definida.`;
 }
 
-module.exports = { calcularScore, calcularConfidence, calcularQualidade, calcularDirecao, calcularJustificativa };
+function calcularStopLoss(preco, direcao, supertrendValor, config = {}) {
+    // Se o SuperTrend foi detectado, usa ele como Stop Loss
+    if (supertrendValor && !isNaN(supertrendValor)) {
+        return supertrendValor;
+    }
+    // Caso contrário, usa o Stop Loss padrão (100 pts)
+    const slPoints = config.risk?.default_sl_points || 100;
+    return direcao === 'VENDA' ? preco + slPoints : preco - slPoints;
+}
+
+module.exports = { 
+    calcularScore, 
+    calcularConfidence, 
+    calcularQualidade, 
+    calcularDirecao, 
+    calcularJustificativa,
+    calcularStopLoss
+};

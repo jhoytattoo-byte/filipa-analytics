@@ -3,12 +3,16 @@ const motor = require('../motor'); // ✅ Importa o Motor de Decisão
 
 async function execute(data, requestId, config) {
     const { visao, quant, contexto } = data;
-    logger.info('[B3 Judge] Decisão usando MOTOR MATEMÁTICO', { requestId });
+    logger.info('[B3 Judge] Decisão usando MOTOR MATEMÁTICO + SuperTrend', { requestId });
     
     // ✅ USANDO O SCORE ÚNICO DO QUANT (NÃO RECALCULA!)
     const scoreFinal = quant.score || 0;
     const rsi = quant.rsi || 50;
     const tendencia = contexto?.tendencia_macro || quant.tendencia || 'LATERAL';
+    
+    // ✅ CAPTURA O SUPERTREND (se disponível)
+    const supertrendStatus = quant.supertrend_status || visao.supertrend_status || null;
+    const supertrendValor = quant.supertrend_valor || visao.supertrend_valor || null;
     
     // ✅ CALCULANDO A DECISÃO COM O SCORE DO QUANT
     const confianca = motor.calcularConfidence(scoreFinal);
@@ -30,7 +34,7 @@ async function execute(data, requestId, config) {
         };
     }
     
-    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR COM JUSTIFICATIVA
+    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR
     if (direcao === 'AGUARDAR') {
         return {
             direcao: 'AGUARDAR',
@@ -53,18 +57,26 @@ async function execute(data, requestId, config) {
         preco = contexto.preco_real;
     }
     
-    const slPoints = config.risk.default_sl_points || 100;
-    const tpPoints = config.risk.default_tp_points || 200;
+    // ✅ USA O SUPERTREND COMO STOP LOSS (se disponível)
+    const stopLoss = motor.calcularStopLoss(preco, direcao, supertrendValor, config);
+    const slPoints = Math.abs(preco - stopLoss);
+    const tpPoints = slPoints * 2; // R/R 1:2
+    
+    // ✅ Adiciona o SuperTrend na justificativa
+    let justificativaFinal = justificativa;
+    if (supertrendStatus) {
+        justificativaFinal += ` SuperTrend: ${supertrendStatus}.`;
+    }
     
     return {
         direcao,
         confianca,
         qualidade,
         timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
-        justificativa: justificativa,
+        justificativa: justificativaFinal,
         estrategia: {
             preco_atual: preco,
-            stop_loss: direcao === 'VENDA' ? preco + slPoints : preco - slPoints,
+            stop_loss: stopLoss,
             alvo1: direcao === 'VENDA' ? preco - tpPoints : preco + tpPoints,
             entrada: 'AGORA',
             points_mode: true
