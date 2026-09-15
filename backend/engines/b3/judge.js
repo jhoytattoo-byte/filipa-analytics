@@ -47,18 +47,6 @@ async function execute(data, requestId, config) {
         };
     }
     
-    // 🔥 SE NÃO HÁ OPORTUNIDADE CLARA, RETORNA AGUARDAR COM JUSTIFICATIVA
-    if (direcao === 'AGUARDAR') {
-        return {
-            direcao: 'AGUARDAR',
-            confianca: confianca,
-            qualidade: qualidade,
-            timing: 'AGUARDAR',
-            justificativa: justificativa,
-            risco_principal: riscos,
-            estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'AGUARDAR', points_mode: false }
-        };
-    }
     
     // 🔧 CORREÇÃO: Se a IA retornou preço < 1000, provavelmente cortou os zeros
     let preco = visao.preco_atual || 120000;

@@ -87,7 +87,7 @@ function calcularScore(indicadores = {}) {
 function calcularConfidence(score) {
     const magnitude = Math.abs(Number(score) || 0);
     let confidence = 50;
-    confidence += magnitude * 3;
+    confidence += magnitude * 4;  // ✅ Aumentado para 4
     return Math.max(50, Math.min(95, confidence));
 }
 
@@ -97,10 +97,9 @@ function calcularConfidence(score) {
 function calcularQualidade(score, confidence, dadosCompletos = true) {
     const magnitude = Math.abs(Number(score) || 0);
     
-    // Dados incompletos nunca podem gerar A
-    if (dadosCompletos && magnitude >= 10 && confidence >= 80) return 'A';
-    if (magnitude >= 6 && confidence >= 70) return 'B';
-    if (magnitude >= 3 && confidence >= 58) return 'C';
+    if (dadosCompletos && magnitude >= 8 && confidence >= 80) return 'A';
+    if (magnitude >= 4 && confidence >= 65) return 'B';
+    if (magnitude >= 2 && confidence >= 55) return 'C';
     return 'D';
 }
 
@@ -110,10 +109,12 @@ function calcularQualidade(score, confidence, dadosCompletos = true) {
 function calcularDirecao(score) {
     const valor = Number(score) || 0;
     
-    // Só entra quando existe força suficiente
-    if (valor >= 6) return 'COMPRA';
-    if (valor <= -6) return 'VENDA';
-    return 'AGUARDAR';
+    // ✅ SEMPRE DÁ UMA DIREÇÃO (nunca AGUARDAR)
+    // Se o score for positivo ou zero, é COMPRA
+    // Se o score for negativo, é VENDA
+    if (valor >= 0) return 'COMPRA';
+    if (valor < 0) return 'VENDA';
+    return 'COMPRA'; // Fallback
 }
 
 // ============================================================
@@ -121,17 +122,19 @@ function calcularDirecao(score) {
 // ============================================================
 function calcularJustificativa(score, direcao) {
     const valor = Number(score) || 0;
+    const magnitude = Math.abs(valor);
     
-    if (direcao === 'AGUARDAR') {
-        return `Score ${valor}. Confluência insuficiente para entrada. A FILIPA aguarda score ≥ +6 ou ≤ -6.`;
-    }
-    
+    // Sempre mostra a direção e a força do sinal
     if (direcao === 'COMPRA') {
-        return `Score +${valor}. Confluência compradora suficiente para COMPRA.`;
+        if (magnitude >= 8) return `Score +${valor}. Confluência compradora FORTE. Sinal de alta confiança.`;
+        if (magnitude >= 4) return `Score +${valor}. Confluência compradora MODERADA. Sinal médio.`;
+        return `Score +${valor}. Confluência compradora FRACA. Sinal de baixa confiança. Opere com cautela.`;
     }
     
     if (direcao === 'VENDA') {
-        return `Score ${valor}. Confluência vendedora suficiente para VENDA.`;
+        if (magnitude >= 8) return `Score ${valor}. Confluência vendedora FORTE. Sinal de alta confiança.`;
+        if (magnitude >= 4) return `Score ${valor}. Confluência vendedora MODERADA. Sinal médio.`;
+        return `Score ${valor}. Confluência vendedora FRACA. Sinal de baixa confiança. Opere com cautela.`;
     }
     
     return `Score ${valor}. Sem direção definida.`;
