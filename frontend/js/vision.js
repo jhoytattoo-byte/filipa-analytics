@@ -256,9 +256,17 @@ const Vision = {
             const endpoint = this.API_URL + '/api/analyze';
             console.log('[VISION] POST →', endpoint);
             
+                        // ✅ CORREÇÃO: Pega o token do Supabase
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            const token = session?.access_token || '';
+            console.log('[VISION] Token:', token ? 'Presente' : 'Ausente');
+            
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`  // ✅ ADICIONADO
+                },
                 body: JSON.stringify({
                     image: this.currentImageBase64.split(',')[1],
                     market_type: marketTypeElement ? marketTypeElement.value : 'otc',
