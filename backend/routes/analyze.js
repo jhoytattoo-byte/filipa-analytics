@@ -1,12 +1,18 @@
 ﻿// ============================================================
-// ROUTES — ANALYZE v4.0 (Rate Limit Supabase + Admin Ilimitado)
+// ROUTES — ANALYZE v18.0 (com Rate Limit Supabase)
 // ============================================================
 const express = require('express');
 const router = express.Router();
 const { analyze } = require('../controllers/analyzeController');
 const { rateLimitMiddleware } = require('../middleware/rateLimitMiddleware');
 
-// ✅ Aplica o rate limit persistente (Supabase) antes de processar
+// Middleware: garante requestId em toda requisição
+router.use((req, res, next) => {
+    req.id = req.id || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    next();
+});
+
+// ✅ Rate Limit + Analyze
 router.post('/', rateLimitMiddleware, analyze);
 
 module.exports = router;
