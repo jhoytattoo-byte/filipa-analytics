@@ -1,5 +1,5 @@
 // ============================================================
-// CONTROLLER — ANALYZE v18.0 (Multi-Mercado com Router)
+// CONTROLLER — ANALYZE v18.1 (Multi-Mercado + Quota)
 // ============================================================
 const pipeline = require('../pipeline/pipeline');
 const logger = require('../utils/logger');
@@ -42,7 +42,9 @@ async function analyze(req, res) {
         
         logger.info('Iniciando análise', { 
             requestId, 
-            marketType: finalMarketType 
+            marketType: finalMarketType,
+            userEmail: req.user?.email,
+            userPlan: req.user?.plan
         });
 
         const result = await Promise.race([
@@ -66,10 +68,17 @@ async function analyze(req, res) {
         res.json({
             success: true,
             data: result.data,
-            meta: result.meta || {
+            meta: {
+                ...(result.meta || {}),
                 requestId,
                 timestamp: new Date().toISOString(),
-                version: '18.0.0'
+                version: '18.1.0',
+                // ✅ ADICIONADO: quota do usuário
+                quota: req.rateLimit ? {
+                    remaining: req.rateLimit.remaining,
+                    dailyRemaining: req.rateLimit.dailyRemaining,
+                    plan: req.rateLimit.plan
+                } : null
             },
             requestId
         });
