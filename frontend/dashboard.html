@@ -576,24 +576,81 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
    <!-- 🎯 SELETOR DE ATIVOS DA FILIPA v18.0 -->
 <div class="market-selector" style="margin: 15px 0; padding: 12px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid var(--primary, #00bfff);">
   <label style="color: var(--text, #fff); font-weight: 600; display: block; margin-bottom: 8px; font-size: 14px;">🎯 Tipo de Mercado:</label>
-  <select id="marketType" style="width: 100%; padding: 10px; background: var(--bg-dark, #1a1a2e); color: var(--text, #fff); border: 1px solid var(--border, #333); border-radius: 6px; font-size: 14px; cursor: pointer;">
-    <option value="otc">🎰 OTC (Corretora) - Turbo 5s</option>
-    <option value="forex">💱 Forex Spot - Dados Reais</option>
-    <option value="b3_win">🇧🇷 B3: Mini Índice (WIN)</option>
-    <option value="b3_wdo">🇧🇷 B3: Mini Dólar (WDO)</option>
-    <option value="b3_bit">₿ B3: Micro Bitcoin (BIT)</option>
-    <option value="b3_eth">⟠ B3: Micro Ethereum (ETH)</option>
-    <option value="b3_sol">🟣 B3: Micro Solana (SOL)</option>
-    <option value="b3_gld">🥇 B3: Ouro (GLD)</option>
-    <option value="crypto_btc">₿ Bitcoin (Binance)</option>
-    <option value="crypto_eth">⟠ Ethereum (Binance)</option>
-    <option value="crypto_sol">🟣 Solana (Binance)</option>
-    <option value="stocks_aapl">📈 Apple (AAPL)</option>
-    <option value="stocks_tsla"> Tesla (TSLA)</option>
-    <option value="commodities_gold">🥇 Ouro (XAU)</option>
-    <option value="commodities_oil">🛢️ Petróleo (WTI)</option>
-  </select>
-</div>
+ <select id="marketType" style="width: 100%; padding: 10px; background: var(--bg-dark, #1a1a2e); color: var(--text, #fff); border: 1px solid var(--border, #333); border-radius: 6px; font-size: 14px; cursor: pointer;">
+    <!-- ============================================ -->
+    <!-- 🇧🇷 B3 (BOLSA BRASIL)                        -->
+    <!-- ============================================ -->
+    <optgroup label="🇧🇷 B3 (Bolsa Brasil)">
+        <option value="b3_win">📈 B3: Mini Índice (WIN)</option>
+        <option value="b3_wdo">💵 B3: Mini Dólar (WDO)</option>
+        <option value="b3_bit">₿ B3: Bitcoin Futuro (BIT)</option>
+        <option value="b3_eth">⟠ B3: Ethereum Futuro (ETR)</option>
+        <option value="b3_sol">🟣 B3: Solana Futuro (SOL)</option>
+        <option value="b3_gld">🥇 B3: Ouro Futuro (GLD)</option>
+    </optgroup>
+    
+    <!-- ============================================ -->
+    <!-- 💱 FOREX                                     -->
+    <!-- ============================================ -->
+    <optgroup label="💱 Forex (Dados Reais)">
+        <option value="forex_eurusd">💶 EUR/USD</option>
+        <option value="forex_gbpusd">💷 GBP/USD</option>
+        <option value="forex_usdjpy">💴 USD/JPY</option>
+        <option value="forex_audusd">🇦🇺 AUD/USD</option>
+        <option value="forex_usdchf">🇨🇭 USD/CHF</option>
+    </optgroup>
+    
+    <!-- ============================================ -->
+    <!-- 🎰 OTC (OPÇÕES BINÁRIAS)                     -->
+    <!-- ============================================ -->
+    <optgroup label="🎰 OTC (Opções Binárias)">
+        <option value="otc">🎰 OTC (Corretora) - Turbo 5s</option>
+        <option value="otc_1m">🎰 OTC - 1 Minuto</option>
+        <option value="otc_5m">🎰 OTC - 5 Minutos</option>
+    </optgroup>
+    
+    <!-- ============================================ -->
+    <!-- 🛢️ COMMODITIES                               -->
+    <!-- ============================================ -->
+    <optgroup label="🛢️ Commodities">
+        <option value="commodities_gold">🥇 Ouro (XAU)</option>
+        <option value="commodities_oil">🛢️ Petróleo (WTI)</option>
+        <option value="commodities_silver">🥈 Prata</option>
+    </optgroup>
+    
+    <!-- ============================================ -->
+    <!-- 📈 AÇÕES                                     -->
+    <!-- ============================================ -->
+    <optgroup label="📈 Ações (EUA)">
+        <option value="stocks_aapl">🍎 Apple (AAPL)</option>
+        <option value="stocks_tsla">🚗 Tesla (TSLA)</option>
+        <option value="stocks_nvda">🖥️ Nvidia (NVDA)</option>
+        <option value="stocks_msft">💻 Microsoft (MSFT)</option>
+        <option value="stocks_amzn">📦 Amazon (AMZN)</option>
+        <option value="stocks_apld">⚡ Applied Digital (APLD)</option>
+        <option value="stocks_iren">🔗 IREN Ltd (IREN)</option>
+        <option value="stocks_mara">⛏️ Marathon Digital (MARA)</option>
+    </optgroup>
+    
+    <!-- ============================================ -->
+    <!-- ₿ CRIPTO                                     -->
+    <!-- ============================================ -->
+    <optgroup label="₿ Cripto (Binance)">
+        <option value="crypto_btc">₿ Bitcoin (BTC)</option>
+        <option value="crypto_eth">⟠ Ethereum (ETH)</option>
+        <option value="crypto_sol">🟣 Solana (SOL)</option>
+    </optgroup>
+    
+    <!-- ============================================ -->
+    <!-- 📊 ÍNDICES                                   -->
+    <!-- ============================================ -->
+    <optgroup label="📊 Índices">
+        <option value="indices_ibov">🇧🇷 IBOV</option>
+        <option value="indices_sp500">🇺🇸 S&P 500</option>
+        <option value="indices_nasdaq">🇺🇸 Nasdaq</option>
+        <option value="indices_dow">🇺🇸 Dow Jones</option>
+    </optgroup>
+</select>
         <div class="progress-container" id="progressContainer">
           <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
           <div class="progress-text" id="progressText">Preparando...</div>
