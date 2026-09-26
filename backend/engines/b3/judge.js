@@ -1,5 +1,5 @@
 // ============================================================
-// B3 JUDGE — v21.0 (Motor Matemático + SuperTrend Triplo)
+// B3 JUDGE — v22.0 (Motor Matemático + SuperTrend Triplo + Multi-Mercado)
 // ============================================================
 const logger = require('../../utils/logger');
 const motor = require('../motor');
@@ -12,6 +12,7 @@ async function execute(data, requestId, config) {
     const scoreFinal = quant.score || 0;
     const rsi = quant.rsi || 50;
     const tendencia = contexto?.tendencia_macro || quant.tendencia || 'LATERAL';
+    const ativo = visao.ativo || quant.ativo || 'N/A';
     
     // ✅ CAPTURA OS 3 SUPERTRENDS
     const supertrendCurto = quant.supertrend_curto || visao.supertrend_curto || null;
@@ -47,28 +48,72 @@ async function execute(data, requestId, config) {
         };
     }
     
+    // ============================================================
+    // 🔧 CORREÇÃO CRÍTICA: Formatação do preço por tipo de ativo
+    // ============================================================
+    let preco = parseFloat(visao.preco_atual) || 0;
+    const ativoUpper = (ativo || '').toUpperCase();
     
-    // 🔧 CORREÇÃO: Se a IA retornou preço < 1000, provavelmente cortou os zeros
-    let preco = visao.preco_atual || 120000;
-    if (preco < 1000) {
-        preco = preco * 1000;
-        logger.info('[B3 Judge] Preço ajustado (IA cortou zeros):', preco);
-    }
+    // Detecta o tipo de ativo
+    const isOTC = ativoUpper.includes('OTC') || ativoUpper.includes('BINÁRIAS');
+    const isForex = ativoUpper.includes('USD') || ativoUpper.includes('EUR') || 
+                    ativoUpper.includes('GBP') || ativoUpper.includes('JPY') || 
+                    ativoUpper.includes('CHF') || ativoUpper.includes('AUD') || 
+                    ativoUpper.includes('CAD') || ativoUpper.includes('NZD');
+    const isCripto = ativoUpper.includes('BTC') || ativoUpper.includes('ETH') || 
+                     ativoUpper.includes('SOL') || ativoUpper.includes('BNB') || 
+                     ativoUpper.includes('XRP') || ativoUpper.includes('DOGE');
+    const isAcao = ativoUpper.includes('AAPL') || ativoUpper.includes('TSLA') || 
+                   ativoUpper.includes('NVDA') || ativoUpper.includes('MSFT') || 
+                   ativoUpper.includes('AMZN') || ativoUpper.includes('GOOGL') || 
+                   ativoUpper.includes('META') || ativoUpper.includes('APLD') || 
+                   ativoUpper.includes('IREN') || ativoUpper.includes('MARA') || 
+                   ativoUpper.includes('BNGO');
+    const isCommodity = ativoUpper.includes('XAU') || ativoUpper.includes('WTI') || 
+                        ativoUpper.includes('XAG') || ativoUpper.includes('COBRE') || 
+                        ativoUpper.includes('CAFÉ') || ativoUpper.includes('SOJA');
+    const isIndice = ativoUpper.includes('IBOV') || ativoUpper.includes('S&P') || 
+                     ativoUpper.includes('NASDAQ') || ativoUpper.includes('DOW') || 
+                     ativoUpper.includes('DAX') || ativoUpper.includes('FTSE') || 
+                     ativoUpper.includes('NIKKEI') || ativoUpper.includes('HANG');
+    const isB3 = ativoUpper.includes('WIN') || ativoUpper.includes('WDO') || 
+                 ativoUpper.includes('BIT') || ativoUpper.includes('ETH') || 
+                 ativoUpper.includes('SOL') || ativoUpper.includes('GLD') ||
+                 ativoUpper.includes('PETR') || ativoUpper.includes('VALE') || 
+                 ativoUpper.includes('ITUB');
     
-    if (contexto?.preco_real && contexto.preco_real > 1000) {
-        preco = contexto.preco_real;
+    // ✅ Aplica a formatação correta
+    if (isOTC || isForex) {
+        // OTC/Forex: mantém 6 casas decimais (ex: 1.132645)
+        preco = motor.formatarPreco(preco, ativo);
+        logger.info('[B3 Judge] Preço formatado (OTC/Forex):', preco);
+    } else if (isCripto || isAcao || isCommodity || isIndice) {
+        // Cripto/Ações/Commodities/Índices: 2 casas decimais (ex: 84000.00)
+        preco = motor.formatarPreco(preco, ativo);
+        logger.info('[B3 Judge] Preço formatado (Cripto/Ações/Commodities):', preco);
+    } else if (isB3) {
+        // B3: arredonda para inteiro (ex: 187000)
+        preco = motor.formatarPreco(preco, ativo);
+        logger.info('[B3 Judge] Preço formatado (B3):', preco);
+    } else {
+        // Fallback: usa o preço real se disponível
+        if (contexto?.preco_real && contexto.preco_real > 0) {
+            preco = contexto.preco_real;
+        }
     }
     
     // ✅ USA O SUPERTREND COMO STOP LOSS (se disponível)
-    const stopLoss = motor.calcularStopLoss(preco, direcao, supertrendValor, config);
-    const slPoints = Math.abs(preco - stopLoss);
-    const tpPoints = slPoints * 2; // R/R 1:2
+    const stopLoss = motor.calcularStopLoss(preco, direcao, ativo, supertrendValor, config);
+    const takeProfit = motor.calcularTakeProfit(preco, direcao, stopLoss, ativo);
     
     // ✅ Adiciona o SuperTrend na justificativa
     let justificativaFinal = justificativa;
     if (supertrendCurto && supertrendMedio && supertrendLongo) {
         justificativaFinal += ` SuperTrends: C=${supertrendCurto}, M=${supertrendMedio}, L=${supertrendLongo}.`;
     }
+    
+    // ✅ Define o modo de pontos (B3 usa pontos, outros usam preço)
+    const pointsMode = isB3;
     
     return {
         direcao,
@@ -80,9 +125,9 @@ async function execute(data, requestId, config) {
         estrategia: {
             preco_atual: preco,
             stop_loss: stopLoss,
-            alvo1: direcao === 'VENDA' ? preco - tpPoints : preco + tpPoints,
+            alvo1: takeProfit,
             entrada: 'AGORA',
-            points_mode: true
+            points_mode: pointsMode
         }
     };
 }
