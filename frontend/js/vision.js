@@ -257,8 +257,16 @@ const Vision = {
             console.log('[VISION] POST →', endpoint);
             
                         // ✅ CORREÇÃO: Pega o token do Supabase
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            const token = session?.access_token || '';
+                       // ✅ CORREÇÃO: Pega o token com try/catch (evita erro se supabaseClient não estiver pronto)
+            let token = '';
+            try {
+                if (window.supabaseClient && window.supabaseClient.auth) {
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    token = session?.access_token || '';
+                }
+            } catch (e) {
+                console.warn('[VISION] Erro ao pegar token:', e.message);
+            }
             console.log('[VISION] Token:', token ? 'Presente' : 'Ausente');
             
             const res = await fetch(endpoint, {
