@@ -33,26 +33,42 @@ function formatarPreco(preco, ativo) {
 function calcularStopLoss(preco, direcao, ativo, supertrendValor, config = {}) {
     const ativoUpper = (ativo || '').toUpperCase();
     
-    // Se o SuperTrend foi detectado, usa ele como Stop Loss
-    if (supertrendValor && !isNaN(supertrendValor)) {
-        return formatarPreco(supertrendValor, ativo);
+    // Se o SuperTrend foi detectado E é válido, usa ele como Stop Loss
+    if (supertrendValor && !isNaN(supertrendValor) && supertrendValor > 0) {
+        // Garante que o SL está do lado correto
+        if (direcao === 'COMPRA' && supertrendValor < preco) {
+            return formatarPreco(supertrendValor, ativo);
+        }
+        if (direcao === 'VENDA' && supertrendValor > preco) {
+            return formatarPreco(supertrendValor, ativo);
+        }
     }
     
-    // Caso contrário, usa o Stop Loss padrão
-    let slPoints = config.risk?.default_sl_points || 100;
+    // ✅ FALLBACK: Usa o Stop Loss padrão com base no tipo de ativo
+    let slPoints = 100; // Padrão B3
     
-    // Adaptar o Stop Loss para cada tipo de ativo
     if (ativoUpper.includes('OTC') || ativoUpper.includes('FOREX') || 
-        ativoUpper.includes('USD') || ativoUpper.includes('EUR')) {
+        ativoUpper.includes('USD') || ativoUpper.includes('EUR') ||
+        ativoUpper.includes('GBP') || ativoUpper.includes('JPY')) {
         slPoints = 0.000500; // 50 pips para Forex/OTC
+    } else if (ativoUpper.includes('DE40') || ativoUpper.includes('DAX') ||
+               ativoUpper.includes('FTSE') || ativoUpper.includes('NIKKEI') ||
+               ativoUpper.includes('JP225') || ativoUpper.includes('HANG')) {
+        slPoints = 50; // 50 pontos para índices
     } else if (ativoUpper.includes('BTC') || ativoUpper.includes('ETH') || 
                ativoUpper.includes('SOL')) {
         slPoints = 100; // 100 pontos para cripto
     } else if (ativoUpper.includes('XAU') || ativoUpper.includes('WTI')) {
         slPoints = 1.00; // 1 dólar para commodities
+    } else if (ativoUpper.includes('AAPL') || ativoUpper.includes('TSLA') || 
+               ativoUpper.includes('NVDA') || ativoUpper.includes('MSFT')) {
+        slPoints = 1.00; // 1 dólar para ações
     }
     
-    return direcao === 'VENDA' ? preco + slPoints : preco - slPoints;
+    // ✅ Garante que o SL está do lado correto
+    const stopLoss = direcao === 'VENDA' ? preco + slPoints : preco - slPoints;
+    
+    return stopLoss;
 }
 
 // ============================================================
@@ -60,6 +76,12 @@ function calcularStopLoss(preco, direcao, ativo, supertrendValor, config = {}) {
 // ============================================================
 function calcularTakeProfit(preco, direcao, stopLoss, ativo) {
     const risco = Math.abs(preco - stopLoss);
+    
+    // Se o risco for 0 ou inválido, usa um valor padrão
+    if (risco === 0 || isNaN(risco)) {
+        return direcao === 'VENDA' ? preco - 100 : preco + 100;
+    }
+    
     const recompensa = risco * 2; // R/R 1:2
     
     return direcao === 'VENDA' ? preco - recompensa : preco + recompensa;
