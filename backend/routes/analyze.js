@@ -1,5 +1,5 @@
 ﻿// ============================================================
-// ROUTES — ANALYZE v18.0 (com Rate Limit Supabase)
+// ROUTES — ANALYZE v18.1 (com Rate Limit Supabase + Token)
 // ============================================================
 const express = require('express');
 const router = express.Router();
@@ -12,7 +12,7 @@ router.use((req, res, next) => {
     next();
 });
 
-// ✅ Rate Limit + Analyze
+// ✅ Rate Limit + Analyze (o middleware já extrai o token do Supabase)
 router.post('/', rateLimitMiddleware, analyze);
 
 module.exports = router;
