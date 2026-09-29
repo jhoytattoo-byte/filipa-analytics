@@ -15,12 +15,12 @@ const config = {
     // 🟢 PRIORIDADE 1: GROQ (GRÁTIS)
     // ============================================================
     groq: {
-        apiKey: process.env.GROQ_API_KEY,
-        visionModel: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.6-27b',
-       textModel: process.env.GROQ_TEXT_MODEL || 'qwen/qwen3.6-27b',
-        maxTokens: parseInt(process.env.GROQ_MAX_TOKENS) || 4096,
-        temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0
-    },
+    apiKey: process.env.GROQ_API_KEY,
+    visionModel: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b',
+    textModel: process.env.GROQ_TEXT_MODEL || 'qwen/qwen3.8-27b',
+    maxTokens: parseInt(process.env.GROQ_MAX_TOKENS) || 4096,
+    temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0
+},
 
     // ============================================================
     // 🟢 PRIORIDADE 2: GEMINI (GRÁTIS)

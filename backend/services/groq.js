@@ -1,5 +1,5 @@
 // ============================================================
-// SERVICE — GROQ (COM FALLBACK ESTRATÉGICO) - CORRIGIDO v18.3
+// SERVICE — GROQ (COM FALLBACK ESTRATÉGICO) - CORRIGIDO v18.4
 // ============================================================
 // ESTRATÉGIA DE CUSTO:
 // 1º: Groq (GRÁTIS) → 2º: Gemini (GRÁTIS) → 3º: Qwen (PAGO)
@@ -18,7 +18,7 @@ async function vision(image, model) {
     // 🟢 PRIORIDADE 1: GROQ VISION (GRÁTIS)
     // ============================================================
     // ATENÇÃO: Para visão, usamos o MODELO DE VISÃO (qwen3-vl-flash),
-    // NÃO o modelo de texto (qwen/qwen3.6-27b)!
+    // NÃO o modelo de texto (qwen/qwen3.8-27b)!
     const modelName = model || config.groq.visionModel || 'qwen3-vl-flash';
     
     try {
@@ -34,7 +34,7 @@ async function vision(image, model) {
                 ]}
             ],
             temperature: config.groq.temperature || 0,
-            max_tokens: 800, // ✅ Reduzido para não estourar o limite
+            max_tokens: 800,
             response_format: { type: 'json_object' },
             reasoning_format: 'hidden'
         });
@@ -83,7 +83,7 @@ async function text(prompt, model) {
     // 🟢 PRIORIDADE 1: GROQ TEXT (GRÁTIS)
     // ============================================================
     try {
-        const modelName = model || config.groq.textModel || 'qwen/qwen3.6-27b';
+        const modelName = model || config.groq.textModel || 'qwen/qwen3.8-27b';
         
         const response = await groq.chat.completions.create({
             model: modelName,
@@ -92,7 +92,7 @@ async function text(prompt, model) {
                 { role: 'user', content: prompt }
             ],
             temperature: config.groq.temperature || 0,
-            max_tokens: 800, // ✅ REDUZIDO (limite gratuito é 1000)
+            max_tokens: 800,
         });
         
         console.log('[Vision] ✅ Groq Text OK (GRÁTIS!)');
