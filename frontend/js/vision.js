@@ -15,8 +15,8 @@ const Vision = {
         this.setupLegacyBrowser();
         this.initAudio();
         this.checkBackendStatus();
-        this.wakeUpBackend(); // 🔥 CORREÇÃO 2: Chamada adicionada
-        console.log('Vision v14.8d inicializado');
+        this.wakeUpBackend();
+        console.log('Vision v14.9 inicializado');
     },
 
     initAudio() {
@@ -24,10 +24,9 @@ const Vision = {
         catch (e) { console.log('AudioContext nao disponivel'); }
     },
 
-    // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
     async checkBackendStatus() {
         try {
-            const res = await fetch(this.API_URL + '/health'); // SEM /api!
+            const res = await fetch(this.API_URL + '/health');
             const data = await res.json();
             if (data.success) {
                 this.updateBackendStatus(true, data.engine === 'running');
@@ -41,7 +40,6 @@ const Vision = {
         setTimeout(() => this.checkBackendStatus(), 15000);
     },
 
-    // ✅ CORREÇÃO 1: Rota de health check alterada para /health (SEM /api)
     async wakeUpBackend() {
         try {
             await fetch(this.API_URL + '/health');
@@ -204,7 +202,6 @@ const Vision = {
         });
     },
 
-    // ✅ CORREÇÃO 3: this agora funciona corretamente (guarda o contexto)
     carregarImagem(blob) {
         if (!blob) return;
         this.currentImageBlob = blob;
@@ -231,9 +228,8 @@ const Vision = {
         document.getElementById('btnAnalyze').disabled = true;
         this.mostrarStatus('ready', 'Aguardando imagem...');
     },
-
         // ============================================================
-    // ANALISAR - v14.8d CORRIGIDO + RISK GATE
+    // ANALISAR - v14.9 CORRIGIDO + RISK GATE + RATE LIMIT 429
     // ============================================================
     analisar: async function () {
         if (!this.currentImageBase64) { 
@@ -252,12 +248,9 @@ const Vision = {
             const marketTypeElement = document.getElementById('marketType');
             const lastExtract = this.browserEngine && this.browserEngine.lastExtract;
             
-            // ✅ CORREÇÃO 4 (log): Adiciona o log do endpoint antes do fetch
             const endpoint = this.API_URL + '/api/analyze';
             console.log('[VISION] POST →', endpoint);
             
-                        // ✅ CORREÇÃO: Pega o token do Supabase
-                       // ✅ CORREÇÃO: Pega o token com try/catch (evita erro se supabaseClient não estiver pronto)
             let token = '';
             try {
                 if (window.supabaseClient && window.supabaseClient.auth) {
@@ -273,7 +266,7 @@ const Vision = {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`  // ✅ ADICIONADO
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     image: this.currentImageBase64.split(',')[1],
@@ -283,10 +276,32 @@ const Vision = {
                 })
             });
 
-            // ✅ CORREÇÃO 4 (log): Adiciona o log do status HTTP
             console.log('[VISION] HTTP ←', res.status, res.statusText);
 
             this.mostrarProgresso(true, 60, 'Processando...');
+
+            // 🔥 FIX v14.9: Trata 429 (rate limit) com painel amigável
+            if (res.status === 429) {
+                const rateData = await res.json().catch(() => ({}));
+                console.log('[VISION] ⛔ Rate limit atingido:', rateData);
+
+                const mensagem = rateData.message || 'Limite de análises atingido.';
+                const sugerirUpgrade = rateData.upgrade === true;
+
+                this.mostrarStatus('warning', '⛔ ' + mensagem);
+
+                if (typeof Alerts !== 'undefined') {
+                    Alerts.add(mensagem, sugerirUpgrade ? 'warning' : 'error');
+                }
+
+                this.mostrarPainelRateLimit(mensagem, sugerirUpgrade, rateData.error);
+
+                this.isAnalyzing = false;
+                document.getElementById('btnAnalyze').disabled = false;
+                this.mostrarProgresso(false);
+                return;
+            }
+
             if (!res.ok) throw new Error('HTTP ' + res.status);
 
             const data = await res.json();
@@ -336,7 +351,7 @@ const Vision = {
                 score: quant.score_final ?? quant.score ?? 0,
                 candles: visao.candles_reais?.length ?? visao.candles?.length ?? visao.candles_extraidos ?? visao.num_candles ?? 0,
                 rsi: quant.rsi ?? visao.rsi ?? '--',
-                tendencia: tendencia, // ✅ Usa a tendência do backend
+                tendencia: tendencia,
                 qualidade: this.calcularQualidade(c, quant.score_final),
                 justificativa: decisao.justificativa || 'Analise concluida.',
                 riscos: decisao.risco_principal || 'Riscos nao identificados.',
@@ -348,7 +363,7 @@ const Vision = {
                 probSell: probSell,
                 melhorEntrada: estrategia.entrada || 'AGORA',
                 volatilidade: curador.volatilidade || 'Normal',
-                sessao: curador.sessao || 'B3 Aberta', // ✅ Usa a sessão do backend
+                sessao: curador.sessao || 'B3 Aberta',
                 noticias: typeof curador.noticias === 'string' ? curador.noticias : (curador.noticias?.headlines ? curador.noticias.headlines.join(' | ') : 'Sem noticias relevantes'),
                 engines: {
                     groqVision: { name: 'Groq Vision', status: visao && visao.ativo ? 'online' : 'offline' },
@@ -369,7 +384,6 @@ const Vision = {
             this.mostrarProgresso(true, 100, 'Concluido!');
 
         } catch (e) { 
-            // ✅ CORREÇÃO 5 (log no catch): Adiciona o log completo do erro
             console.error('[VISION] FALHA COMPLETA:', {
                 message: e.message,
                 endpoint: this.API_URL + '/api/analyze',
@@ -384,23 +398,16 @@ const Vision = {
             setTimeout(() => this.mostrarProgresso(false), 3000); 
         }
     },
-    
-    // ============================================================
+        // ============================================================
     // EXIBIR RESULTADO
     // ============================================================
     exibirResultado(dados) {
         const panel = document.getElementById('resultPanel');
         if (!panel) return;
 
-                // 🔥 SE A DIREÇÃO FOR "AGUARDAR", MOSTRA A JUSTIFICATIVA
+        // 🔥 SE A DIREÇÃO FOR "AGUARDAR", MOSTRA A JUSTIFICATIVA
         if (dados.direcao === 'AGUARDAR') {
             this.mostrarStatus('warning', `⏳ ${dados.justificativa || 'Aguardando sinal mais forte.'}`);
-            panel.style.display = 'none';
-            return;
-        }
-
-        if (dados.direcao === 'AGUARDAR') {
-            this.mostrarStatus('warning', '⏳ Aguardando sinal mais forte. Não operar.');
             panel.style.display = 'none';
             return;
         }
@@ -471,20 +478,20 @@ const Vision = {
             this.setText('timingNews', dados.noticias);
         }
 
-      const analiseEl = document.getElementById('analysisText');
-if (analiseEl) {
-    analiseEl.style.display = 'block';
-    
-    // 🔥 Lógica para mostrar o risco correto
-    let mensagemRiscos = '';
-    if (dados.confianca < 70 || dados.qualidade === 'C' || dados.qualidade === 'D') {
-        mensagemRiscos = `⚠️ <strong style="color:#ffaa00">AVISO OPERACIONAL:</strong> Confiança ${dados.confianca}% e Qualidade ${dados.qualidade}. Sinal fraco. Se decidir operar, reduza o tamanho da posição (Qtd = 1) e use Stop Loss obrigatório.`;
-    } else {
-        mensagemRiscos = dados.riscos || 'Riscos não identificados. Sinal forte.';
-    }
-    
-    analiseEl.innerHTML = `<strong style="color:${cor}">🧠 filipa analisa:</strong> ${dados.justificativa}<br><br><strong style="color:#ff4444">⚠️ Riscos:</strong> ${mensagemRiscos}`;
-}
+        const analiseEl = document.getElementById('analysisText');
+        if (analiseEl) {
+            analiseEl.style.display = 'block';
+            
+            let mensagemRiscos = '';
+            if (dados.confianca < 70 || dados.qualidade === 'C' || dados.qualidade === 'D') {
+                mensagemRiscos = `⚠️ <strong style="color:#ffaa00">AVISO OPERACIONAL:</strong> Confiança ${dados.confianca}% e Qualidade ${dados.qualidade}. Sinal fraco. Se decidir operar, reduza o tamanho da posição (Qtd = 1) e use Stop Loss obrigatório.`;
+            } else {
+                mensagemRiscos = dados.riscos || 'Riscos não identificados. Sinal forte.';
+            }
+            
+            analiseEl.innerHTML = `<strong style="color:${cor}">🧠 filipa analisa:</strong> ${dados.justificativa}<br><br><strong style="color:#ff4444">⚠️ Riscos:</strong> ${mensagemRiscos}`;
+        }
+
         const actions = document.getElementById('actionButtons');
         if (actions) {
             actions.style.display = 'flex';
@@ -497,7 +504,6 @@ if (analiseEl) {
         this.renderEnginesStatus(dados.engines);
     },
 
-    // ✅ CORRIGIDO: Formatação sem duplicação
     formatarNumero(valor, mercado) {
         if (!valor || valor === '--' || isNaN(valor)) return '--';
         const num = parseFloat(valor);
@@ -668,29 +674,27 @@ if (analiseEl) {
         return '1:' + (reward / risk).toFixed(1);
     },
 
- detectarSessao() {
-    // Se o backend já mandou a sessão correta (via lastAnalysis), usa ela
-    if (this.lastAnalysis && this.lastAnalysis.sessao && this.lastAnalysis.sessao !== 'B3 Fechada') {
-        return this.lastAnalysis.sessao;
-    }
-    
-    // Caso contrário, calcula com a fórmula de Brasília (UTC-3)
-    const agora = new Date();
-    const utcTime = agora.getTime() + (agora.getTimezoneOffset() * 60000);
-    const brasiliaTime = new Date(utcTime + (-3 * 60 * 60000));
-    
-    const h = brasiliaTime.getHours();
-    const diaSemana = brasiliaTime.getDay();
-    
-    const ehDiaUtil = diaSemana >= 1 && diaSemana <= 5;
-    
-    if (ehDiaUtil && h >= 10 && h < 17) return 'B3 Aberta';
-    if (!ehDiaUtil) return 'B3 Fechada (Fim de Semana)';
-    if (h < 10) return 'B3 Fechada (Pre-Abertura)';
-    if (h >= 17) return 'B3 Fechada (Pos-Fechamento)';
-    
-    return 'Transicao';
-},
+    detectarSessao() {
+        if (this.lastAnalysis && this.lastAnalysis.sessao && this.lastAnalysis.sessao !== 'B3 Fechada') {
+            return this.lastAnalysis.sessao;
+        }
+        
+        const agora = new Date();
+        const utcTime = agora.getTime() + (agora.getTimezoneOffset() * 60000);
+        const brasiliaTime = new Date(utcTime + (-3 * 60 * 60000));
+        
+        const h = brasiliaTime.getHours();
+        const diaSemana = brasiliaTime.getDay();
+        
+        const ehDiaUtil = diaSemana >= 1 && diaSemana <= 5;
+        
+        if (ehDiaUtil && h >= 10 && h < 17) return 'B3 Aberta';
+        if (!ehDiaUtil) return 'B3 Fechada (Fim de Semana)';
+        if (h < 10) return 'B3 Fechada (Pre-Abertura)';
+        if (h >= 17) return 'B3 Fechada (Pos-Fechamento)';
+        
+        return 'Transicao';
+    },
 
     registrarHistorico(resultado, visao) {
         const hist = { 
@@ -738,8 +742,7 @@ if (analiseEl) {
         `;
         list.insertBefore(item, list.firstChild);
     },
-
-    playAlert(direcao, confianca) {
+        playAlert(direcao, confianca) {
         if (!this.audioContext) return;
         const confNum = parseFloat(confianca);
         if (isNaN(confNum) || !isFinite(confNum) || confNum < 0) return;
@@ -783,6 +786,97 @@ if (analiseEl) {
     mostrarStatus(tipo, msg) { 
         const el = document.getElementById('analysisStatus'); 
         if (el) { el.className = 'status-text ' + tipo; el.textContent = msg; } 
+    },
+
+    // 🔥 v14.9: Painel amigável de rate limit (429)
+    mostrarPainelRateLimit(mensagem, sugerirUpgrade, tipo) {
+        const panel = document.getElementById('resultPanel');
+        if (!panel) return;
+
+        if (!panel.dataset.originalHtml) {
+            panel.dataset.originalHtml = panel.innerHTML;
+        }
+
+        panel.style.display = 'block';
+        panel.classList.add('active');
+
+        const titulos = {
+            'FLOOD':       '⏱️ Aguarde um instante',
+            'DAILY_QUOTA': '📊 Cota diária atingida',
+            'QUOTA':       '📈 Cota mensal atingida'
+        };
+        const titulo = titulos[tipo] || '⛔ Limite atingido';
+
+        panel.innerHTML = `
+          <div style="padding: 32px; text-align: center;">
+            <div style="
+              display:inline-flex;
+              width:64px; height:64px;
+              background: rgba(255,170,0,.15);
+              border: 2px solid #ffaa00;
+              border-radius: 50%;
+              align-items: center;
+              justify-content: center;
+              font-size: 32px;
+              margin-bottom: 20px;
+            ">⛔</div>
+
+            <h2 style="
+              color: #fff;
+              font-size: 1.4rem;
+              margin: 0 0 12px 0;
+              font-weight: 700;
+            ">${titulo}</h2>
+
+            <p style="
+              color: #9aa7bd;
+              font-size: 1rem;
+              line-height: 1.5;
+              margin: 0 auto 24px auto;
+              max-width: 480px;
+            ">${mensagem}</p>
+
+            ${sugerirUpgrade ? `
+              <a href="https://www.filipaanalytics.com.br/#planos"
+                 style="
+                   display: inline-block;
+                   background: linear-gradient(135deg, #22c55e, #16a34a);
+                   color: #fff;
+                   padding: 14px 32px;
+                   border-radius: 8px;
+                   text-decoration: none;
+                   font-weight: 700;
+                   font-size: 1rem;
+                   box-shadow: 0 4px 12px rgba(34,197,94,.3);
+                 ">
+                🚀 Fazer Upgrade
+              </a>
+            ` : `
+              <button onclick="Vision.dismissResult()"
+                style="
+                  background: rgba(255,255,255,.1);
+                  color: #fff;
+                  border: 1px solid rgba(255,255,255,.2);
+                  padding: 12px 28px;
+                  border-radius: 8px;
+                  font-size: 1rem;
+                  cursor: pointer;
+                ">
+                Entendi
+              </button>
+            `}
+          </div>
+        `;
+    },
+
+    // 🔥 v14.9: Restaura o HTML original do resultPanel
+    restaurarResultPanel() {
+        const panel = document.getElementById('resultPanel');
+        if (!panel) return;
+        if (panel.dataset.originalHtml) {
+            panel.innerHTML = panel.dataset.originalHtml;
+            delete panel.dataset.originalHtml;
+        }
     },
 
     mostrarProgresso(ativo, pct, texto) { 
@@ -868,6 +962,9 @@ if (analiseEl) {
     },
 
     dismissResult() {
+        // 🔥 v14.9: Restaura o HTML original se foi sobrescrito pelo rate limit
+        this.restaurarResultPanel();
+
         const panel = document.getElementById('resultPanel');
         if (panel) { panel.style.display = 'none'; panel.classList.remove('active'); }
 
@@ -895,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ['check1','check2','check3','check4','check5','check6'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', () => Vision.updateChecklist());
+        if (el) el.addEventListener('change', () => Vision.updateVisionChecklist ? Vision.updateVisionChecklist() : Vision.updateChecklist());
     });
 });
 
