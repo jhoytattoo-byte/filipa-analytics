@@ -30,9 +30,12 @@ const STOCKS_SYMBOLS = {
  */
 function extrairStockBase(ticker) {
     if (!ticker || typeof ticker !== 'string') return '';
+
+    // 🔥 Limpeza: remove timeframe, espaços, caracteres estranhos
+    // Ex: "AAPL 60Min" → "AAPL", "Apple Inc 1D" → "APPLE"
     const upper = ticker.toUpperCase().trim();
 
-    // Detecta por nome completo (Apple → AAPL)
+    // Detecta por nome completo primeiro
     const nomesCompletos = {
         'APPLE': 'AAPL',
         'MICROSOFT': 'MSFT',
@@ -48,13 +51,33 @@ function extrairStockBase(ticker) {
         if (upper.includes(nome)) return sigla;
     }
 
-    // Detecta por sigla (com ou sem sufixo)
+    // 🔥 Detecta por sigla (com tolerância a typos comuns)
+    const typosComuns = {
+        'APPL': 'AAPL',   // Apple digitado errado
+        'GOOG': 'GOOGL',  // Google sem L
+        'MSFT': 'MSFT',   // ok
+        'AMZN': 'AMZN',
+        'NVDA': 'NVDA',
+        'TSLA': 'TSLA',
+        'META': 'META',
+        'IREN': 'IREN',
+        'MARA': 'MARA',
+        'BNGO': 'BNGO',
+        'APLD': 'APLD',
+    };
+
+    // Tenta por sigla exata primeiro
     const siglas = Object.keys(STOCKS_SYMBOLS);
     for (const sigla of siglas) {
         if (upper.includes(sigla)) return sigla;
     }
 
-    // Fallback: 4 letras iniciais
+    // Tenta por typos comuns
+    for (const [typo, sigla] of Object.entries(typosComuns)) {
+        if (upper.includes(typo)) return sigla;
+    }
+
+    // Fallback: 4 letras iniciais (sem espaços)
     return upper.slice(0, 4).replace(/[^A-Z]/g, '');
 }
 
