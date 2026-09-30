@@ -14,14 +14,24 @@ async function execute(imageBase64, requestId, config) {
     throw new Error('JSON inválido do Vision');
   }
   
-  const candles = visionData.candles || [];
+    // 🔥 CORREÇÃO: garante que candles é array (tolerante a undefined)
+  let candles = visionData.candles;
+  if (!Array.isArray(candles)) {
+    candles = visionData.candlesticks || visionData.candles_reais || [];
+  }
+  if (!Array.isArray(candles)) candles = [];
+
+  const total = config.quant.candles || 50;
+
   if (candles.length === 0) {
-    const total = config.quant.candles || 50;
-    const precoBase = visionData.preco_atual || 2000; // Ouro base
+    logger.warn(`[Commodities Vision] ⚠️ Modelo não retornou candles — gerando ${total} sintéticos`, { requestId });
+    const precoBase = parseFloat(visionData.preco_atual) || 2000;
     visionData.candles_reais = Array(total).fill(null).map(() => ({
       time: null,
       open: precoBase + (Math.random() - 0.5) * 20,
       close: precoBase + (Math.random() - 0.5) * 20,
+      high: precoBase + 10,
+      low: precoBase - 10,
       cor: Math.random() > 0.5 ? 'verde' : 'vermelha'
     }));
   } else {
