@@ -14,14 +14,24 @@ async function execute(imageBase64, requestId, config) {
     throw new Error('JSON inválido do Vision');
   }
   
-  const candles = visionData.candles || [];
+    // 🔥 CORREÇÃO: garante que candles é array (tolerante a undefined)
+  let candles = visionData.candles;
+  if (!Array.isArray(candles)) {
+    candles = visionData.candlesticks || visionData.candles_reais || [];
+  }
+  if (!Array.isArray(candles)) candles = [];
+
+  const total = config.quant.candles || 10;
+
   if (candles.length === 0) {
-    const total = config.quant.candles || 10;
-    const precoBase = visionData.preco_atual || 1.1600;
+    logger.warn(`[OTC Vision] ⚠️ Modelo não retornou candles — gerando ${total} sintéticos`, { requestId });
+    const precoBase = parseFloat(visionData.preco_atual) || 1.1600;
     visionData.candles_reais = Array(total).fill(null).map(() => ({
       time: null,
       open: precoBase + (Math.random() - 0.5) * 0.0020,
       close: precoBase + (Math.random() - 0.5) * 0.0020,
+      high: precoBase + 0.0010,
+      low: precoBase - 0.0010,
       cor: Math.random() > 0.5 ? 'verde' : 'vermelha'
     }));
   } else {
