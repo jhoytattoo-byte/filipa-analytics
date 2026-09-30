@@ -1,5 +1,6 @@
 const logger = require('../../utils/logger');
 const { getMarketData } = require('../../services/dataService');
+const { getB3Symbol } = require('../../config/b3Symbols');
 const groqService = require('../../services/groq');
 const prompts = require('../../config/prompts');
 
@@ -15,11 +16,12 @@ async function execute(visionData, requestId, config) {
   let ancoragemValida = true;
   let tendenciaMacro = 'LATERAL';
 
-  const simboloAPI = visionData.ativo === 'WIN' ? '^BVSP' : 
-                      visionData.ativo === 'WDO' ? 'USDBRL' : 
-                      visionData.ativo === 'BIT' ? 'BTCUSD' : '';
+  // 🔥 BLOCO 2: Mapeamento robusto (aceita WINV26, WDOV26, PETR4, etc.)
+  const b3Info = getB3Symbol(visionData.ativo);
+  const simboloAPI = b3Info ? b3Info.api : '';
 
   if (simboloAPI) {
+    logger.info(`[B3 Curator] Símbolo API: ${simboloAPI} (${b3Info.nome})`, { requestId });
     dadosReais = await getMarketData(visionData.ativo, simboloAPI);
     
     if (dadosReais) {
@@ -28,20 +30,23 @@ async function execute(visionData, requestId, config) {
         const divergencia = Math.abs(precoVision - dadosReais.preco_real);
         if (divergencia > 50) {
           ancoragemValida = false;
-          logger.warn(`[B3 Curator] ⚠️ Divergência de ${divergencia} pontos detectada!`);
+          logger.warn(`[B3 Curator] ⚠️ Divergência de ${divergencia} pontos detectada!`, { requestId });
         }
       }
       tendenciaMacro = dadosReais.tendencia_macro || 'LATERAL';
     }
+  } else {
+    logger.warn(`[B3 Curator] Ativo não mapeado: ${visionData.ativo}`, { requestId });
   }
 
   let contextoIA = '';
   try {
     const promptCurador = prompts.curador;
-    const resposta = await groqService.text(promptCurador, 'qwen/qwen3.6-27b');
+    const resposta = await groqService.text(promptCurador, 'qwen/qwen3.8-27b');
     const parsed = JSON.parse(resposta);
     contextoIA = parsed.opiniao || '';
   } catch (e) {
+    logger.warn(`[B3 Curator] ⚠️ IA falhou: ${e.message}`, { requestId });
     contextoIA = '';
   }
 

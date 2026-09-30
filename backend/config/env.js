@@ -1,5 +1,5 @@
 ﻿// ============================================================
-// CONFIG — ENV (v18.2) - ESTRATÉGIA DE CUSTO + DADOS REAIS
+// CONFIG — ENV (v18.3) - ESTRATÉGIA DE CUSTO + DADOS REAIS
 // ============================================================
 // ESTRATÉGIA:
 // 1º: Groq (GRÁTIS) → 2º: Gemini (GRÁTIS) → 3º: Qwen (PAGO)
@@ -15,12 +15,12 @@ const config = {
     // 🟢 PRIORIDADE 1: GROQ (GRÁTIS)
     // ============================================================
     groq: {
-    apiKey: process.env.GROQ_API_KEY,
-    visionModel: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b',
-    textModel: process.env.GROQ_TEXT_MODEL || 'qwen/qwen3.8-27b',
-    maxTokens: parseInt(process.env.GROQ_MAX_TOKENS) || 4096,
-    temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0
-},
+        apiKey: process.env.GROQ_API_KEY,
+        visionModel: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b',
+        textModel: process.env.GROQ_TEXT_MODEL || 'llama-3.1-70b-versatile',
+        maxTokens: parseInt(process.env.GROQ_MAX_TOKENS) || 4096,
+        temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0
+    },
 
     // ============================================================
     // 🟢 PRIORIDADE 2: GEMINI (GRÁTIS)
@@ -65,10 +65,15 @@ const config = {
     }
 };
 
-// Validação do modelo Groq
+// ============================================================
+// Validação do modelo Groq (v18.3)
+// ============================================================
+// Estratégia: grátis primeiro (Groq), pago como fallback (Qwen DashScope)
+// Vision: usa qwen3.8 (Groq) — modelo atual do Groq
+// Text: usa llama-3.1 (Groq grátis) com fallback automático
 if (config.groq.visionModel === 'llama-3.2-11b-vision-preview') {
-    console.warn('⚠️  AVISO: GROQ_VISION_MODEL descontinuado! Usando qwen/qwen3.6-27b');
-    config.groq.visionModel = 'qwen/qwen3.6-27b';
+    console.warn('⚠️  AVISO: GROQ_VISION_MODEL descontinuado! Usando qwen/qwen3.8-27b');
+    config.groq.visionModel = 'qwen/qwen3.8-27b';
 }
 
 // Log da estratégia
