@@ -39,11 +39,19 @@ async function execute(visionData, requestId, config) {
     logger.warn(`[B3 Curator] Ativo não mapeado: ${visionData.ativo}`, { requestId });
   }
 
-  let contextoIA = '';
+    let contextoIA = '';
   try {
     const promptCurador = prompts.curador;
     const resposta = await groqService.text(promptCurador, 'qwen/qwen3.8-27b');
-    const parsed = JSON.parse(resposta);
+    
+    // 🔥 CORREÇÃO: extrai o JSON mesmo se vier dentro de ```json ... ```
+    let textoLimpo = (resposta || '').trim();
+    const jsonMatch = textoLimpo.match(/{[\s\S]*}/);
+    if (jsonMatch) {
+      textoLimpo = jsonMatch[0];
+    }
+    
+    const parsed = JSON.parse(textoLimpo);
     contextoIA = parsed.opiniao || '';
   } catch (e) {
     logger.warn(`[B3 Curator] ⚠️ IA falhou: ${e.message}`, { requestId });

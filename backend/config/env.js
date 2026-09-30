@@ -60,8 +60,16 @@ const config = {
         apiKey: process.env.POLYGON_API_KEY,
         baseUrl: 'https://api.polygon.io'
     },
-    binance: {
+       binance: {
         baseUrl: 'https://api.binance.com'
+    },
+
+    // ============================================================
+    // 📊 BRAPI — Ações B3 + Índices (plano grátis)
+    // ============================================================
+    brapi: {
+        token: process.env.BRAPI_TOKEN,
+        baseUrl: 'https://brapi.dev/api'
     }
 };
 
