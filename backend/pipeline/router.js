@@ -1,5 +1,10 @@
 // ============================================================
-// ROUTER — Carrega engines específicas por mercado
+// ROUTER — Carrega engines específicas por mercado (v2.0)
+// ============================================================
+// CHANGELOG v2.0:
+// - Detecção por PREFIXO em vez de mapa exato (robusto a novos ativos)
+// - Corrige bug onde forex_eurusd caía no fallback OTC
+// - Aceita qualquer sufixo: forex_*, b3_*, crypto_*, etc.
 // ============================================================
 const logger = require('../utils/logger');
 const marketConfig = require('../config/markets');
@@ -7,36 +12,48 @@ const marketConfig = require('../config/markets');
 // Cache de engines carregadas (para performance)
 const engineCache = {};
 
-// Mapeia chaves específicas para a pasta base da engine
+// ============================================================
+// DETECÇÃO DE MERCADO POR PREFIXO
+// ============================================================
 function getMarketType(marketKey) {
-  const map = {
-    'otc': 'otc',
-    'forex': 'forex',
-    'b3_win': 'b3',
-    'b3_wdo': 'b3',
-    'b3_bit': 'b3',
-    'b3_eth': 'b3',
-    'b3_sol': 'b3',
-    'b3_gld': 'b3',
-    'crypto_btc': 'crypto',
-    'crypto_eth': 'crypto',
-    'crypto_sol': 'crypto',
-    'stocks_aapl': 'stocks',
-    'stocks_tsla': 'stocks',
-    'commodities_gold': 'commodities',
-    'commodities_oil': 'commodities'
-  };
+  if (!marketKey || typeof marketKey !== 'string') return 'otc';
   
-  // Se não achar, usa otc como fallback
-  return map[marketKey] || 'otc';
+  const key = marketKey.toLowerCase().trim();
+  
+  // Detecção por prefixo (aceita qualquer sufixo)
+  if (key.startsWith('b3_'))          return 'b3';
+  if (key.startsWith('forex'))        return 'forex';
+  if (key.startsWith('crypto'))       return 'crypto';
+  if (key.startsWith('stocks'))       return 'stocks';
+  if (key.startsWith('commodities'))  return 'commodities';
+  
+  // ⚠️ TEMPORÁRIO: indices e funds ainda não têm engines próprias
+  // TODO: criar engines/indices/ e engines/funds/ com seus próprios arquivos
+  if (key.startsWith('indices'))      return 'b3';
+  if (key.startsWith('funds'))        return 'stocks';
+  
+  if (key.startsWith('otc'))          return 'otc';
+  
+  // Casos exatos sem prefixo (legado)
+  if (key === 'forex' || key === 'b3' || key === 'crypto' || 
+      key === 'stocks' || key === 'commodities' || key === 'otc') {
+    return key;
+  }
+  
+  // Fallback final
+  logger.warn(`[Router] Mercado desconhecido: ${marketKey}, usando OTC`);
+  return 'otc';
 }
 
+// ============================================================
+// CARREGA ENGINES
+// ============================================================
 function getEngines(marketKey) {
   const marketType = getMarketType(marketKey);
   const config = marketConfig[marketType];
   
   if (!config) {
-    logger.warn(`[Router] Mercado ${marketKey} não configurado, usando OTC`);
+    logger.warn(`[Router] Mercado ${marketKey} (tipo: ${marketType}) não configurado, usando OTC`);
     return getEngines('otc');
   }
   
@@ -62,6 +79,9 @@ function getEngines(marketKey) {
   return engines;
 }
 
+// ============================================================
+// RETORNA INFO DO MERCADO
+// ============================================================
 function getMarketInfo(marketKey) {
   const marketType = getMarketType(marketKey);
   return marketConfig[marketType] || marketConfig.otc;
