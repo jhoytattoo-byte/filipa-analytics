@@ -20,20 +20,31 @@ async function execute(visionData, requestId, config) {
   const b3Info = getB3Symbol(visionData.ativo);
   const simboloAPI = b3Info ? b3Info.api : '';
 
+   // 🔥 DETECTA SE É CONTRATO FUTURO (WIN, WDO, IND, DOL)
+  // Futuros têm ágio sobre o spot → não faz sentido validar divergência
+  const isFuturo = /^(WIN|WDO|IND|DOL)/i.test(visionData.ativo);
+  
   if (simboloAPI) {
     logger.info(`[B3 Curator] Símbolo API: ${simboloAPI} (${b3Info.nome})`, { requestId });
     dadosReais = await getMarketData(visionData.ativo, simboloAPI);
     
     if (dadosReais) {
-      const precoVision = parseFloat(visionData.preco_atual);
-      if (precoVision && dadosReais.preco_real) {
-        const divergencia = Math.abs(precoVision - dadosReais.preco_real);
-        if (divergencia > 50) {
-          ancoragemValida = false;
-          logger.warn(`[B3 Curator] ⚠️ Divergência de ${divergencia} pontos detectada!`, { requestId });
+      if (isFuturo) {
+        // ✅ Futuros: usa só a tendência macro (não valida divergência)
+        logger.info(`[B3 Curator] ℹ️ Contrato futuro (${visionData.ativo}) — sem validação cruzada`, { requestId });
+        tendenciaMacro = dadosReais.tendencia_macro || 'LATERAL';
+      } else {
+        // ✅ Ações/Índices: valida divergência (é o mesmo ativo)
+        const precoVision = parseFloat(visionData.preco_atual);
+        if (precoVision && dadosReais.preco_real) {
+          const divergencia = Math.abs(precoVision - dadosReais.preco_real);
+          if (divergencia > 50) {
+            ancoragemValida = false;
+            logger.warn(`[B3 Curator] ⚠️ Divergência de ${divergencia} pontos detectada!`, { requestId });
+          }
         }
+        tendenciaMacro = dadosReais.tendencia_macro || 'LATERAL';
       }
-      tendenciaMacro = dadosReais.tendencia_macro || 'LATERAL';
     }
   } else {
     logger.warn(`[B3 Curator] Ativo não mapeado: ${visionData.ativo}`, { requestId });
