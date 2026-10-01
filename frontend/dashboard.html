@@ -1044,18 +1044,27 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
         </div>
       </div>
     </div>
-    <!-- TUTORIAL -->
+   <!-- TUTORIAL v2.1 — 8 Mercados + Browser Engine + Cascata -->
 <div id="tutorialPane" class="content-pane">
   <div class="stream-container" style="padding:32px">
     <h3 style="margin-bottom:8px">📘 Como Usar a Filipa</h3>
-    <p style="color:var(--muted);font-size:.9rem;margin-bottom:28px">Guia passo a passo para extrair o máximo da IA.</p>
+    <p style="color:var(--muted);font-size:.9rem;margin-bottom:28px">Guia passo a passo para extrair o máximo da IA em 8 mercados.</p>
+
+    <!-- Passo 0 — Browser Engine -->
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:24px;padding:20px;background:rgba(100,200,255,.04);border:1px solid rgba(100,200,255,.12);border-radius:16px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#66c8ff,#0080cc);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;flex-shrink:0;">0</div>
+      <div>
+        <h4 style="margin-bottom:6px;font-size:1.05rem">Abra sua Corretora (Opcional)</h4>
+        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">No bloco <strong>SUA CORRETORA</strong> (acima do Vision Engine), cole a URL da sua plataforma (ex: <code>https://app.ctrader.com</code>) e clique em <strong>Abrir</strong>. A corretora abre dentro da própria Filipa. <strong>Algumas corretoras bloqueiam embedding</strong> (X-Frame-Options) — cTrader, TradingView e outras funcionam. Se a sua bloquear, use em aba externa normalmente.</p>
+      </div>
+    </div>
 
     <!-- Passo 1 -->
     <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:24px;padding:20px;background:rgba(0,191,255,.04);border:1px solid rgba(0,191,255,.12);border-radius:16px;">
       <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#0080ff);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;flex-shrink:0;">1</div>
       <div>
-        <h4 style="margin-bottom:6px;font-size:1.05rem">Capture o Gráfico</h4>
-        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">Abra sua corretora no 👁️ Vision Engine ou aba externa, ajuste o ativo e timeframe desejados, e tire um <strong>screenshot</strong> da tela (Print Screen ou Win+Shift+S). A Filipa lê a imagem visualmente — não importa se é Quotex, Pocket Option, IQ Option ou TradingView.</p>
+        <h4 style="margin-bottom:6px;font-size:1.05rem">Escolha o Mercado e o Ativo</h4>
+        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">No dropdown <strong>Tipo de Mercado</strong>, escolha a categoria (B3, Forex, OTC, Crypto, Stocks, Commodities, Índices ou Fundos). Depois, no dropdown <strong>Ativo</strong>, escolha o ativo específico. A lista se ajusta automaticamente à categoria escolhida.</p>
       </div>
     </div>
 
@@ -1063,8 +1072,8 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
     <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:24px;padding:20px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.12);border-radius:16px;">
       <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--success),#00cc6a);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;flex-shrink:0;">2</div>
       <div>
-        <h4 style="margin-bottom:6px;font-size:1.05rem">Cole na Vision Engine</h4>
-        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">Vá em <strong>👁️ Vision Engine</strong> e cole a imagem com <kbd style="background:rgba(255,255,255,.1);padding:2px 8px;border-radius:6px;font-family:monospace;font-size:.85rem">Ctrl+V</kbd> ou clique na área para selecionar o arquivo. A IA identificará automaticamente o ativo, timeframe e tendência.</p>
+        <h4 style="margin-bottom:6px;font-size:1.05rem">Capture o Gráfico</h4>
+        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">Se você abriu a corretora dentro da Filipa (Passo 0), basta tirar o <strong>screenshot</strong> da própria tela. Se preferir a corretora em aba externa (Profit, TradingView, Quotex, Polarium, IQ Option), use Print Screen ou Win+Shift+S. A Filipa lê a imagem visualmente — não importa a plataforma.</p>
       </div>
     </div>
 
@@ -1072,35 +1081,58 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
     <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:24px;padding:20px;background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.12);border-radius:16px;">
       <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ccaa00);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;flex-shrink:0;color:#000;">3</div>
       <div>
+        <h4 style="margin-bottom:6px;font-size:1.05rem">Cole na Vision Engine</h4>
+        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">Vá em <strong>👁️ Vision Engine</strong> e cole a imagem com <kbd style="background:rgba(255,255,255,.1);padding:2px 8px;border-radius:6px;font-family:monospace;font-size:.85rem">Ctrl+V</kbd> ou clique na área para selecionar o arquivo. A IA identificará automaticamente o ativo, timeframe e tendência.</p>
+      </div>
+    </div>
+
+    <!-- Passo 4 -->
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:24px;padding:20px;background:rgba(191,0,255,.04);border:1px solid rgba(191,0,255,.12);border-radius:16px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#bf00ff,#8000cc);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;flex-shrink:0;">4</div>
+      <div>
         <h4 style="margin-bottom:6px;font-size:1.05rem">Analise e Confirme</h4>
-        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">Clique em <strong>ANALISAR IMAGEM</strong>. A pipeline roda: Vision → Quant → Curador → Filipa (Juiz). Em segundos você terá direção, confiança, score, SL/TP e probabilidades. Só opere se confiança ≥ 60%.</p>
+        <p style="color:var(--muted);font-size:.9rem;line-height:1.6">Clique em <strong>ANALISAR IMAGEM</strong>. A pipeline roda: Vision → Quant → Curador → Filipa (Juiz). Em segundos você terá direção, confiança, score, SL/TP, probabilidades e o veredito da IA. Só opere se confiança ≥ 60%.</p>
       </div>
     </div>
 
-    <!-- Cards Forex vs OTC -->
-    <h4 style="margin:32px 0 16px;font-size:1.05rem">💱 Forex vs OTC</h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;">
-      <div style="padding:20px;background:rgba(0,191,255,.05);border:1px solid rgba(0,191,255,.15);border-radius:14px;">
-        <div style="font-size:1.3rem;margin-bottom:8px;">🌍 Forex Spot</div>
-        <div style="font-size:.85rem;color:var(--muted);line-height:1.6;">
-          • Dados reais via TwelveData<br>
-          • Maior precisão (85% conf)<br>
-          • Funciona em qualquer broker<br>
-          • Melhor para análise técnica pura
-        </div>
+    <!-- 8 Mercados -->
+    <h4 style="margin:32px 0 16px;font-size:1.05rem">🌍 8 Mercados Disponíveis</h4>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:28px;">
+      <div style="padding:16px;background:rgba(0,191,255,.05);border:1px solid rgba(0,191,255,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">🇧🇷 B3 (Bolsa Brasil)</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">WIN, WDO, PETR4, VALE3, ITUB4 + blue chips. Fonte: Brapi. Dados reais.</div>
       </div>
-      <div style="padding:20px;background:rgba(255,170,0,.05);border:1px solid rgba(255,170,0,.15);border-radius:14px;">
-        <div style="font-size:1.3rem;margin-bottom:8px;">🎰 OTC / Corretora</div>
-        <div style="font-size:.85rem;color:var(--muted);line-height:1.6;">
-          • Estimativa visual pela IA<br>
-          • Confiança ligeiramente menor<br>
-          • Anti-manipulação ativo<br>
-          • Use como suporte, não única fonte
-        </div>
+      <div style="padding:16px;background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">💱 Forex Spot</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">EUR/USD, GBP/JPY, USD/JPY + 7 pares. Fonte: TwelveData. Sessões globais 24h.</div>
+      </div>
+      <div style="padding:16px;background:rgba(255,170,0,.05);border:1px solid rgba(255,170,0,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">🎰 OTC (Opções Binárias)</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">EUR/USD OTC, Turbo, 1m, 5m. Análise visual (mercado sintético).</div>
+      </div>
+      <div style="padding:16px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">₿ Crypto (Binance)</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX. Fonte: Binance. 24/7.</div>
+      </div>
+      <div style="padding:16px;background:rgba(0,191,255,.05);border:1px solid rgba(0,191,255,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">📈 Ações (EUA)</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">AAPL, TSLA, NVDA, MSFT, AMZN, META + tech. Fonte: TwelveData. Sessões NYSE/NASDAQ.</div>
+      </div>
+      <div style="padding:16px;background:rgba(255,100,0,.05);border:1px solid rgba(255,100,0,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">🥇 Commodities</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">Ouro, Prata, Petróleo WTI, Cobre, Café, Soja, Boi Gordo. Fonte: TwelveData.</div>
+      </div>
+      <div style="padding:16px;background:rgba(100,0,255,.05);border:1px solid rgba(100,0,255,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">📊 Índices Globais</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">IBOV, S&P 500, Nasdaq 100, Dow Jones, DAX, FTSE, Nikkei 225, Hang Seng. Fonte: Yahoo Finance.</div>
+      </div>
+      <div style="padding:16px;background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.15);border-radius:12px;">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">🏦 Fundos (FIIs)</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.5;">MXRF11, HGLG11, VISC11, KNRI11. Fonte: Brapi. Dados reais.</div>
       </div>
     </div>
 
-    <!-- Timeframe & Expiração -->
+    <!-- Sessões -->
     <h4 style="margin:32px 0 16px;font-size:1.05rem">⏱️ Timeframe & Expiração</h4>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;">
       <div style="text-align:center;padding:16px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:12px;">
@@ -1146,12 +1178,24 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
     <h4 style="margin:32px 0 16px;font-size:1.05rem">❓ FAQ</h4>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <details style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">A Filipa funciona em qualquer corretora?</summary>
-        <p style="color:var(--muted);font-size:.85rem;margin-top:10px;line-height:1.6">Sim. A Vision Engine lê screenshots visualmente — independente da plataforma. Para dados reais de Forex, usamos TwelveData (EUR/USD, GBP/USD, etc.).</p>
+        <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">Posso abrir a corretora dentro da Filipa?</summary>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:10px;line-height:1.6">Sim. Use o bloco <strong>SUA CORRETORA</strong> acima do Vision Engine. Cole a URL (ex: <code>app.ctrader.com</code>) e clique em <strong>Abrir</strong>. Algumas corretoras bloqueiam embedding por segurança (X-Frame-Options), mas cTrader, TradingView e a maioria das plataformas Web funcionam. Se a sua bloquear, use em aba externa normalmente.</p>
       </details>
       <details style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">O que fazer quando a análise dá "Indicação Parcial"?</summary>
-        <p style="color:var(--muted);font-size:.85rem;margin-top:10px;line-height:1.6">Significa que alguma engine falhou (ex: TwelveData 404 em OTC). A qualidade cai para D e confiança -40%. Você decide se opera ou espera um sinal completo.</p>
+        <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">A Filipa funciona em qualquer corretora?</summary>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:10px;line-height:1.6">Sim. A Vision Engine lê screenshots visualmente — independente da plataforma (Profit, TradingView, cTrader, Quotex, Polarium, IQ Option). Para dados reais, usamos Brapi (B3 + FIIs), TwelveData (Forex + Crypto + EUA + Commodities) e Yahoo Finance (Índices Globais).</p>
+      </details>
+      <details style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">O que significa "Dados reais divergem da imagem"?</summary>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:10px;line-height:1.6">A Filipa comparou o preço lido na imagem com o preço real de mercado (Brapi, TwelveData ou Yahoo). Se a diferença for grande, ela bloqueia a operação para evitar erro. Use sempre um print recente.</p>
+      </details>
+      <details style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">Existe diferença entre OTC e Forex?</summary>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:10px;line-height:1.6">Sim. <strong>Forex Spot</strong> é mercado real com dados da TwelveData (maior precisão). <strong>OTC</strong> é mercado sintético (definido pela corretora) — a Filipa usa análise visual e anti-manipulação. Use OTC como suporte, nunca como fonte única.</p>
+      </details>
+      <details style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">Qual mercado tem maior precisão?</summary>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:10px;line-height:1.6">Os mercados com dados reais (B3, Forex, Crypto, Stocks, Commodities, Índices, FIIs) têm maior precisão porque a Filipa valida o preço cruzado. O OTC é mais volátil (mercado sintético) e depende apenas da leitura visual.</p>
       </details>
       <details style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
         <summary style="font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text);">Como fecho uma operação antes do tempo?</summary>
@@ -1163,8 +1207,6 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
       </details>
     </div>
   </div>
-</div>
-  </main>
 </div>
 
 <!-- Toast Container -->
