@@ -1,5 +1,5 @@
 // ============================================================
-// CONFIGURAÇÃO DE MERCADOS — FILIPA v18.0
+// CONFIGURAÇÃO DE MERCADOS — FILIPA v18.1
 // ============================================================
 module.exports = {
   otc: {
@@ -59,6 +59,28 @@ module.exports = {
     quant: { engine: 'commodities', candles: 50, rsi_period: 14 },
     curator: { engine: 'twelvedata', finnhub: true },
     judge: { engine: 'claude', claude_fallback: true },
+    risk: { default_sl_percent: 2, default_tp_percent: 4 }
+  },
+
+  // 🆕 ÍNDICES GLOBAIS — Yahoo Finance
+  indices: {
+    name: 'Índices Globais',
+    icon: '📊',
+    vision: { provider: 'groq', turbo: false, timeout: 15000 },
+    quant: { engine: 'indices', candles: 50, rsi_period: 14, points_mode: true },
+    curator: { engine: 'yahoo', finnhub: false },
+    judge: { engine: 'local', claude_fallback: false },
+    risk: { default_sl_percent: 1, default_tp_percent: 3 }
+  },
+
+  // 🆕 FUNDOS IMOBILIÁRIOS (FIIs) — Brapi
+  funds: {
+    name: 'Fundos (FIIs)',
+    icon: '🏦',
+    vision: { provider: 'groq', turbo: false, timeout: 15000 },
+    quant: { engine: 'funds', candles: 50, rsi_period: 14 },
+    curator: { engine: 'brapi', finnhub: false },
+    judge: { engine: 'local', claude_fallback: false },
     risk: { default_sl_percent: 2, default_tp_percent: 4 }
   }
 };
