@@ -4,6 +4,20 @@ async function execute(visionData, requestId, config) {
   logger.info('[B3 Quant] Cálculo em PONTOS (WIN/WDO)', { requestId });
   
   const candles = visionData.candles_reais || [];
+  
+  // 🔥 FASE 3: guarda contra candles vazios/insuficientes
+  if (!Array.isArray(candles) || candles.length < 5) {
+    logger.warn(`[B3 Quant] ⚠️ Candles insuficientes (${candles.length}) — retornando NEUTRO`, { requestId });
+    return {
+      score: 0,
+      rsi: 50,
+      confidence: null,
+      candles_validos: candles.length,
+      direcao_quant: 'NEUTRO',
+      points_mode: true
+    };
+  }
+  
   const rsi = calcularRSI(candles, config.quant.rsi_period || 14);
   
   // Análise de tendência para B3
@@ -26,7 +40,7 @@ async function execute(visionData, requestId, config) {
     confidence: null,
     candles_validos: candles.length,
     direcao_quant: score > 0 ? 'COMPRA' : score < 0 ? 'VENDA' : 'NEUTRO',
-    points_mode: true // Crucial para B3
+    points_mode: true
   };
   
   logger.info(`[B3 Quant] ✅ Score: ${score}, RSI: ${rsi} (pontos)`, { requestId });

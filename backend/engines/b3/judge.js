@@ -1,8 +1,9 @@
 // ============================================================
-// B3 JUDGE — v22.0 (Motor Matemático + SuperTrend Triplo + Multi-Mercado)
+// B3 JUDGE — v23.0 (Motor Matemático + SuperTrend Triplo + Claude Fallback)
 // ============================================================
 const logger = require('../../utils/logger');
 const motor = require('../motor');
+const anthropicService = require('../../services/anthropic');  // 🔥 NOVO
 
 async function execute(data, requestId, config) {
     const { visao, quant, contexto } = data;
@@ -47,14 +48,180 @@ async function execute(data, requestId, config) {
             estrategia: { preco_atual: null, stop_loss: null, alvo1: null, entrada: 'BLOQUEADO', points_mode: false }
         };
     }
+
+    // ============================================================
+    // 🔥 FASE 5: CLAUDE como fallback do Juiz
+    // ============================================================
+    // Só chama IA quando o motor matemático está em dúvida:
+    // - Score = 0 (empate técnico)
+    // - OU confiança < 70% (sinal fraco)
+    // ============================================================
+    const precisaIA = (scoreFinal === 0) || (confianca < 70);
+    
+    if (precisaIA) {
+        try {
+            const promptJuiz = `Você é a Filipa, juíza de trading.
+                
+Analise os dados abaixo e decida se deve COMPRA, VENDA ou AGUARDAR.
+
+DADOS:
+- Ativo: ${ativo}
+- Score Quant: ${scoreFinal} (escala: -3 a +3)
+- RSI: ${rsi}
+- Tendência macro: ${tendencia}
+- Preço atual: ${visao.preco_atual}
+- Confiança do motor: ${confianca}%
+- Qualidade: ${qualidade}
+
+REGRAS:
+1. Score próximo de 0 + tendência lateral → AGUARDAR
+2. Score positivo + RSI saudável → COMPRA
+3. Score negativo + RSI saudável → VENDA
+4. Se tiver dúvida, prefira AGUARDAR
+
+Responda APENAS este JSON:
+{
+  "direcao": "COMPRA | VENDA | AGUARDAR",
+  "confianca": 50-90,
+  "qualidade": "A | B | C | D",
+  "justificativa": "explicação curta em português",
+  "risco_principal": "risco principal ou 'Riscos não identificados'"
+}`;
+            
+            const respostaIA = await anthropicService.complete(promptJuiz, {
+                maxTokens: 500,
+                temperature: 0.2
+            });
+            
+            // Parse robusto do JSON
+            let textoLimpo = (respostaIA || '').trim();
+            const jsonMatch = textoLimpo.match(/{[\s\S]*}/);
+            if (jsonMatch) textoLimpo = jsonMatch[0];
+            
+            const parsedIA = JSON.parse(textoLimpo);
+            
+            logger.info(`[B3 Judge] 🤖 Claude validou: ${parsedIA.direcao} ${parsedIA.confianca}%`, { requestId });
+            
+            // Se Claude disse COMPRA ou VENDA, usa a decisão dele
+            if (parsedIA.direcao && parsedIA.direcao !== 'AGUARDAR') {
+                const direcaoIA = parsedIA.direcao;
+                const confiancaIA = parseInt(parsedIA.confianca) || confianca;
+                const qualidadeIA = parsedIA.qualidade || qualidade;
+                
+                // Formata preço por tipo de ativo
+                const precoIA = formatarPrecoPorAtivo(parseFloat(visao.preco_atual) || 0, ativo);
+                
+                // Recalcula SL/TP com base na decisão do Claude
+                const stopLossIA = motor.calcularStopLoss(precoIA, direcaoIA, ativo, null, config);
+                const takeProfitIA = motor.calcularTakeProfit(precoIA, direcaoIA, stopLossIA, ativo);
+                
+                logger.info(`[B3 Judge] ✅ Decisão FINAL (Claude): ${direcaoIA} ${confiancaIA}%`, { requestId });
+                
+                return {
+                    direcao: direcaoIA,
+                    confianca: confiancaIA,
+                    qualidade: qualidadeIA,
+                    timing: confiancaIA >= 80 ? 'AGORA' : 'PROXIMA_VELA',
+                    justificativa: `🤖 Claude: ${parsedIA.justificativa}`,
+                    risco_principal: parsedIA.risco_principal || 'Riscos não identificados',
+                    estrategia: {
+                        preco_atual: precoIA,
+                        stop_loss: stopLossIA,
+                        alvo1: takeProfitIA,
+                        entrada: 'AGORA',
+                        points_mode: false
+                    },
+                    fonte_decisao: 'claude_fallback'
+                };
+            }
+            
+            // Se Claude disse AGUARDAR, retorna NEUTRO
+            if (parsedIA.direcao === 'AGUARDAR') {
+                logger.info(`[B3 Judge] ⏸️ Claude sugeriu AGUARDAR`, { requestId });
+                
+                return {
+                    direcao: 'NEUTRO',
+                    confianca: parseInt(parsedIA.confianca) || 50,
+                    qualidade: parsedIA.qualidade || 'D',
+                    timing: 'PROXIMA_VELA',
+                    justificativa: `⏸️ ${parsedIA.justificativa || 'Aguardar sinal mais forte.'}`,
+                    risco_principal: parsedIA.risco_principal || 'Riscos não identificados',
+                    estrategia: {
+                        preco_atual: formatarPrecoPorAtivo(parseFloat(visao.preco_atual) || 0, ativo),
+                        stop_loss: null,
+                        alvo1: null,
+                        entrada: 'AGUARDAR',
+                        points_mode: false
+                    },
+                    fonte_decisao: 'claude_fallback'
+                };
+            }
+            
+        } catch (e) {
+            // Se Claude falhar, mantém a decisão do motor matemático
+            logger.warn(`[B3 Judge] ⚠️ Claude falhou, usando motor local: ${e.message}`, { requestId });
+        }
+    } else {
+        logger.info(`[B3 Judge] ℹ️ Motor local OK (score=${scoreFinal}, conf=${confianca}%) — Claude não necessário`, { requestId });
+    }
     
     // ============================================================
-    // 🔧 CORREÇÃO CRÍTICA: Formatação do preço por tipo de ativo
+    // 🔧 Formatação do preço por tipo de ativo (fallback: motor local)
     // ============================================================
     let preco = parseFloat(visao.preco_atual) || 0;
+    preco = formatarPrecoPorAtivo(preco, ativo);
+    
+    // Se o preço formatado for 0, tenta usar o preço real do contexto
+    if (preco === 0 && contexto?.preco_real && contexto.preco_real > 0) {
+        preco = contexto.preco_real;
+    }
+    
+    // ✅ USA O SUPERTREND COMO STOP LOSS (se disponível)
+    const stopLoss = motor.calcularStopLoss(preco, direcao, ativo, supertrendValor, config);
+    const takeProfit = motor.calcularTakeProfit(preco, direcao, stopLoss, ativo);
+    
+    // ✅ Adiciona o SuperTrend na justificativa
+    let justificativaFinal = justificativa;
+    if (supertrendCurto && supertrendMedio && supertrendLongo) {
+        justificativaFinal += ` SuperTrends: C=${supertrendCurto}, M=${supertrendMedio}, L=${supertrendLongo}.`;
+    }
+    
+    // ✅ Define o modo de pontos (B3 usa pontos, outros usam preço)
+    const ativoUpper = (ativo || '').toUpperCase();
+    const isB3 = ativoUpper.includes('WIN') || ativoUpper.includes('WDO') || 
+                 ativoUpper.includes('BIT') || ativoUpper.includes('ETH') || 
+                 ativoUpper.includes('SOL') || ativoUpper.includes('GLD') ||
+                 ativoUpper.includes('PETR') || ativoUpper.includes('VALE') || 
+                 ativoUpper.includes('ITUB');
+    const pointsMode = isB3;
+    
+    return {
+        direcao,
+        confianca,
+        qualidade,
+        timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
+        justificativa: justificativaFinal,
+        risco_principal: riscos,
+        estrategia: {
+            preco_atual: preco,
+            stop_loss: stopLoss,
+            alvo1: takeProfit,
+            entrada: 'AGORA',
+            points_mode: pointsMode
+        },
+        fonte_decisao: 'motor_local'
+    };
+}
+
+// ============================================================
+// HELPER: Formata o preço de acordo com o tipo de ativo
+// ============================================================
+function formatarPrecoPorAtivo(preco, ativo) {
+    if (!preco || isNaN(preco)) return 0;
+    
     const ativoUpper = (ativo || '').toUpperCase();
     
-    // Detecta o tipo de ativo
+    // Detecta tipo
     const isOTC = ativoUpper.includes('OTC') || ativoUpper.includes('BINÁRIAS');
     const isForex = ativoUpper.includes('USD') || ativoUpper.includes('EUR') || 
                     ativoUpper.includes('GBP') || ativoUpper.includes('JPY') || 
@@ -76,60 +243,18 @@ async function execute(data, requestId, config) {
                      ativoUpper.includes('NASDAQ') || ativoUpper.includes('DOW') || 
                      ativoUpper.includes('DAX') || ativoUpper.includes('FTSE') || 
                      ativoUpper.includes('NIKKEI') || ativoUpper.includes('HANG');
-    const isB3 = ativoUpper.includes('WIN') || ativoUpper.includes('WDO') || 
-                 ativoUpper.includes('BIT') || ativoUpper.includes('ETH') || 
-                 ativoUpper.includes('SOL') || ativoUpper.includes('GLD') ||
-                 ativoUpper.includes('PETR') || ativoUpper.includes('VALE') || 
-                 ativoUpper.includes('ITUB');
     
-    // ✅ Aplica a formatação correta
+    // Formata
     if (isOTC || isForex) {
-        // OTC/Forex: mantém 6 casas decimais (ex: 1.132645)
-        preco = motor.formatarPreco(preco, ativo);
-        logger.info('[B3 Judge] Preço formatado (OTC/Forex):', preco);
+        // OTC/Forex: mantém decimais
+        return motor.formatarPreco(preco, ativo);
     } else if (isCripto || isAcao || isCommodity || isIndice) {
-        // Cripto/Ações/Commodities/Índices: 2 casas decimais (ex: 84000.00)
-        preco = motor.formatarPreco(preco, ativo);
-        logger.info('[B3 Judge] Preço formatado (Cripto/Ações/Commodities):', preco);
-    } else if (isB3) {
-        // B3: arredonda para inteiro (ex: 187000)
-        preco = motor.formatarPreco(preco, ativo);
-        logger.info('[B3 Judge] Preço formatado (B3):', preco);
+        // Cripto/Ações/Commodities/Índices: mantém decimais
+        return motor.formatarPreco(preco, ativo);
     } else {
-        // Fallback: usa o preço real se disponível
-        if (contexto?.preco_real && contexto.preco_real > 0) {
-            preco = contexto.preco_real;
-        }
+        // B3 (WIN, WDO, PETR, etc): arredonda pra inteiro
+        return motor.formatarPreco(preco, ativo);
     }
-    
-    // ✅ USA O SUPERTREND COMO STOP LOSS (se disponível)
-    const stopLoss = motor.calcularStopLoss(preco, direcao, ativo, supertrendValor, config);
-    const takeProfit = motor.calcularTakeProfit(preco, direcao, stopLoss, ativo);
-    
-    // ✅ Adiciona o SuperTrend na justificativa
-    let justificativaFinal = justificativa;
-    if (supertrendCurto && supertrendMedio && supertrendLongo) {
-        justificativaFinal += ` SuperTrends: C=${supertrendCurto}, M=${supertrendMedio}, L=${supertrendLongo}.`;
-    }
-    
-    // ✅ Define o modo de pontos (B3 usa pontos, outros usam preço)
-    const pointsMode = isB3;
-    
-    return {
-        direcao,
-        confianca,
-        qualidade,
-        timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
-        justificativa: justificativaFinal,
-        risco_principal: riscos,
-        estrategia: {
-            preco_atual: preco,
-            stop_loss: stopLoss,
-            alvo1: takeProfit,
-            entrada: 'AGORA',
-            points_mode: pointsMode
-        }
-    };
 }
 
 module.exports = { execute };

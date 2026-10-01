@@ -10,6 +10,8 @@ const config = require('../config/env');
 const prompts = require('../config/prompts');
 const geminiService = require('./geminiVision');
 const qwenService = require('./qwen');
+const deepseekService = require('./deepseek');      // 🔥 NOVO
+const anthropicService = require('./anthropic');    // 🔥 NOVO
 
 const groq = new Groq({ apiKey: config.groq.apiKey });
 
@@ -83,7 +85,7 @@ async function text(prompt, model) {
     // 🟢 PRIORIDADE 1: GROQ TEXT (GRÁTIS)
     // ============================================================
     try {
-        const modelName = model || config.groq.textModel || 'qwen/qwen3.8-27b';
+        const modelName = model || config.groq.textModel || 'llama-3.3-70b-versatile';
         
         const response = await groq.chat.completions.create({
             model: modelName,
@@ -95,30 +97,47 @@ async function text(prompt, model) {
             max_tokens: 800,
         });
         
-        console.log('[Vision] ✅ Groq Text OK (GRÁTIS!)');
+        console.log('[Text] ✅ Groq Text OK (GRÁTIS!)');
         return response.choices[0].message.content;
         
     } catch (error) {
-        console.error('[Vision] ❌ Groq Text falhou:', error.message);
+        console.error('[Text] ❌ Groq Text falhou:', error.message);
     }
 
     // ============================================================
-    // 🟢 PRIORIDADE 2: GEMINI TEXT (GRÁTIS)
+    // 🟡 PRIORIDADE 2: DEEPSEEK (PAGO — fallback do Curador)
     // ============================================================
     try {
-        console.log('[Vision] 🟢 Gemini Text (GRÁTIS)');
-        throw new Error('Gemini text não implementado');
-        
+        console.log('[Text] 🟡 DeepSeek (PAGO — fallback do Curador)');
+        const resposta = await deepseekService.complete(prompt, {
+            maxTokens: 800,
+            temperature: 0.3
+        });
+        console.log('[Text] ✅ DeepSeek OK (PAGO)');
+        return resposta;
     } catch (error) {
-        console.error('[Vision] ❌ Gemini Text falhou:', error.message);
+        console.error('[Text] ❌ DeepSeek falhou:', error.message);
     }
 
     // ============================================================
-    // 🔴 PRIORIDADE 3: QWEN TEXT (PAGO) - ❌ REMOVIDO
-    // O Qwen é uma IA de VISÃO, não de texto.
+    // 🔴 PRIORIDADE 3: ANTHROPIC CLAUDE (PAGO — último recurso)
     // ============================================================
+    try {
+        console.log('[Text] 🔴 Anthropic Claude (PAGO — último recurso)');
+        const resposta = await anthropicService.complete(prompt, {
+            maxTokens: 800,
+            temperature: 0.3
+        });
+        console.log('[Text] ✅ Anthropic OK (PAGO)');
+        return resposta;
+    } catch (error) {
+        console.error('[Text] ❌ Anthropic falhou:', error.message);
+    }
 
-    throw new Error('Todos os serviços de texto falharam');
+    // ============================================================
+    // 💀 TODOS FALHARAM
+    // ============================================================
+    throw new Error('Todos os serviços de texto falharam (Groq, DeepSeek, Anthropic)');
 }
 
 module.exports = { vision, text };
