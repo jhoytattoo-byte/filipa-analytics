@@ -6,16 +6,10 @@
 
 const FUNDS_SYMBOLS = {
     // === FIIs Papel (renda fixa) ===
-    'MXRF11': { api: 'MXRF11', nome: 'Maxi Renda',     marketHours: 'B3 (10h-18h BRT)', segmento: 'Papel' },
-
-    // === FIIs Logística ===
-    'HGLG11': { api: 'HGLG11', nome: 'CSHG Logística', marketHours: 'B3 (10h-18h BRT)', segmento: 'Logística' },
-
-    // === FIIs Shopping ===
-    'VISC11': { api: 'VISC11', nome: 'Vinci Shopping', marketHours: 'B3 (10h-18h BRT)', segmento: 'Shoppings' },
-
-    // === FIIs Híbridos ===
-    'KNRI11': { api: 'KNRI11', nome: 'Kinea Renda',    marketHours: 'B3 (10h-18h BRT)', segmento: 'Híbrido' },
+    'MXRF11': { api: 'MXRF11', fonte: 'brapi', nome: 'Maxi Renda',     marketHours: 'B3 (10h-18h BRT)', segmento: 'Papel' },
+    'HGLG11': { api: 'HGLG11', fonte: 'brapi', nome: 'CSHG Logística', marketHours: 'B3 (10h-18h BRT)', segmento: 'Logística' },
+    'VISC11': { api: 'VISC11', fonte: 'brapi', nome: 'Vinci Shopping', marketHours: 'B3 (10h-18h BRT)', segmento: 'Shoppings' },
+    'KNRI11': { api: 'KNRI11', fonte: 'brapi', nome: 'Kinea Renda',    marketHours: 'B3 (10h-18h BRT)', segmento: 'Híbrido' },
 };
 
 /**

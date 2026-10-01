@@ -16,15 +16,10 @@ const { getYahooData } = require('./yahooFinance');
 function isB3Symbol(symbol, ativo) {
     const s = (symbol || '').toUpperCase();
     const a = (ativo || '').toUpperCase();
-
-    // Índice Bovespa
     if (s.startsWith('^')) return true;
-
-    // Ações B3 (sigla + número)
-    const acoesB3 = ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'B3SA3', 'WEGE3', 'MGLU3'];
+    const acoesB3 = ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'B3SA3', 'WEGE3', 'MGLU3',
+                     'MXRF11', 'HGLG11', 'VISC11', 'KNRI11'];  // ← FIIs
     if (acoesB3.includes(s)) return true;
-    if (acoesB3.includes(a)) return true;
-
     return false;
 }
 
