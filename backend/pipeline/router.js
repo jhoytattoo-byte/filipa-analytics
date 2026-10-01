@@ -27,7 +27,7 @@ if (key.startsWith('crypto'))       return 'crypto';
 if (key.startsWith('stocks'))       return 'stocks';
 if (key.startsWith('commodities'))  return 'commodities';
 if (key.startsWith('indices'))      return 'indices';   // ✅ engine própria
-if (key.startsWith('funds'))        return 'stocks';    // ⚠️ ainda temporário
+if (key.startsWith('funds'))        return 'funds';     // ✅ engine própria
 if (key.startsWith('otc'))          return 'otc';
   
   // Casos exatos sem prefixo (legado)
