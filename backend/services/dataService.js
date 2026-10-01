@@ -8,6 +8,7 @@
 
 const config = require('../config/env');
 const logger = require('../utils/logger');
+const { getYahooData } = require('./yahooFinance');
 
 // ============================================================
 // DETECÇÃO: É ativo B3?
@@ -174,18 +175,22 @@ async function getMarketData(ativo, symbol) {
     if (isB3Symbol(symbol, ativo)) {
         const brapiData = await getBrapiData(symbol);
         if (brapiData) return brapiData;
-        logger.info(`[DataService] Brapi falhou, tentando TwelveData para ${symbol}`);
+        logger.info(`[DataService] Brapi falhou, tentando Yahoo Finance para ${symbol}`);
     }
 
-    // 2. TwelveData (Forex, Cripto, EUA, ou fallback do B3)
+    // 2. TwelveData (Forex, Cripto, EUA)
     const twelveData = await getTwelveData(symbol);
     if (twelveData) return twelveData;
 
-    // 3. Binance (cripto fallback)
+    // 3. 🔥 Yahoo Finance (NOVO) — índices globais
+    const yahooData = await getYahooData(symbol);
+    if (yahooData) return yahooData;
+
+    // 4. Binance (cripto fallback)
     const binanceData = await getBinanceData(symbol);
     if (binanceData) return binanceData;
 
-    // 4. Polygon (último recurso)
+    // 5. Polygon (último recurso)
     const polygonData = await getPolygonData(symbol);
     if (polygonData) return polygonData;
 

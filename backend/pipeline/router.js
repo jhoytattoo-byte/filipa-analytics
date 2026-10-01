@@ -21,18 +21,14 @@ function getMarketType(marketKey) {
   const key = marketKey.toLowerCase().trim();
   
   // Detecção por prefixo (aceita qualquer sufixo)
-  if (key.startsWith('b3_'))          return 'b3';
-  if (key.startsWith('forex'))        return 'forex';
-  if (key.startsWith('crypto'))       return 'crypto';
-  if (key.startsWith('stocks'))       return 'stocks';
-  if (key.startsWith('commodities'))  return 'commodities';
-  
-  // ⚠️ TEMPORÁRIO: indices e funds ainda não têm engines próprias
-  // TODO: criar engines/indices/ e engines/funds/ com seus próprios arquivos
-  if (key.startsWith('indices'))      return 'b3';
-  if (key.startsWith('funds'))        return 'stocks';
-  
-  if (key.startsWith('otc'))          return 'otc';
+ if (key.startsWith('b3_'))          return 'b3';
+if (key.startsWith('forex'))        return 'forex';
+if (key.startsWith('crypto'))       return 'crypto';
+if (key.startsWith('stocks'))       return 'stocks';
+if (key.startsWith('commodities'))  return 'commodities';
+if (key.startsWith('indices'))      return 'indices';   // ✅ engine própria
+if (key.startsWith('funds'))        return 'stocks';    // ⚠️ ainda temporário
+if (key.startsWith('otc'))          return 'otc';
   
   // Casos exatos sem prefixo (legado)
   if (key === 'forex' || key === 'b3' || key === 'crypto' || 
