@@ -36,8 +36,12 @@ function extrairIndiceBase(ticker) {
     // ============================================================
     // 🔥 Tolerâncias extras (antes dos nomes completos)
     // ============================================================
-    // Detecta HK*50 (HK50, HKX50, HK-50, etc.) → Hang Seng
-    if (/HK[A-Z]?\s*-?\s*50/i.test(upper)) return 'HSI';
+   // 🔥 Tolerância ao Hang Seng (HK50, HKX50, HKGO, HK-50, HK 50, etc.)
+// Cobre erros comuns de OCR:
+//   HK50, HKX50, HK-50, HK 50, HK  50
+//   HKGO, HKG0  ← O (letra) confundido com 0 (número)
+if (/^HK[A-Z]?\s*-?\s*[5G][0O]$/i.test(upper)) return 'HSI';
+if (upper.includes('HKGO') || upper.includes('HKG0')) return 'HSI';
 
     // Detecta "Hang Seng" ou "HANGSENG" colado
     if (upper.includes('HANGSENG')) return 'HSI';
