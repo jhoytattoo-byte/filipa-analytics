@@ -33,7 +33,18 @@ function extrairIndiceBase(ticker) {
     if (!ticker || typeof ticker !== 'string') return '';
     const upper = ticker.toUpperCase().trim();
 
-    // Detecta por nome completo (mais específico primeiro)
+    // ============================================================
+    // 🔥 Tolerâncias extras (antes dos nomes completos)
+    // ============================================================
+    // Detecta HK*50 (HK50, HKX50, HK-50, etc.) → Hang Seng
+    if (/HK[A-Z]?\s*-?\s*50/i.test(upper)) return 'HSI';
+
+    // Detecta "Hang Seng" ou "HANGSENG" colado
+    if (upper.includes('HANGSENG')) return 'HSI';
+
+    // ============================================================
+    // Detecta por nome completo
+    // ============================================================
     const nomesCompletos = {
         'IBOVESPA': 'IBOV',
         'BOVESPA': 'IBOV',
@@ -48,36 +59,41 @@ function extrairIndiceBase(ticker) {
         'NIKKEI': 'NIKKEI',
         'HANG SENG': 'HSI',
         'HANG': 'HSI',
-        'HK50': 'HSI',           // alguns brokers usam HK50
     };
 
     for (const [nome, sigla] of Object.entries(nomesCompletos)) {
         if (upper.includes(nome)) return sigla;
     }
 
+    // ============================================================
     // Detecta por sigla direta (^HSI, ^N225, etc.)
+    // ============================================================
     const siglas = ['IBOV', 'SP500', 'NDX', 'DJI', 'DAX', 'FTSE', 'NIKKEI', 'HSI'];
     for (const sigla of siglas) {
         if (upper.includes(sigla)) return sigla;
     }
 
+    // ============================================================
     // Detecta símbolo Yahoo (^GSPC, ^BVSP, ^HSI, etc.)
+    // ============================================================
     const yahooMatch = upper.match(/\^(GSPC|NDX|DJI|GDAXI|FTSE|N225|HSI|BVSP)/);
     if (yahooMatch) {
         const mapaYahoo = {
-            'BVSP': 'IBOV',
-            'GSPC': 'SP500',
-            'NDX': 'NDX',
-            'DJI': 'DJI',
+            'BVSP':  'IBOV',
+            'GSPC':  'SP500',
+            'NDX':   'NDX',
+            'DJI':   'DJI',
             'GDAXI': 'DAX',
-            'FTSE': 'FTSE',
-            'N225': 'NIKKEI',
-            'HSI': 'HSI',
+            'FTSE':  'FTSE',
+            'N225':  'NIKKEI',
+            'HSI':   'HSI',
         };
         return mapaYahoo[yahooMatch[1]] || '';
     }
 
+    // ============================================================
     // Fallback: 5 letras iniciais
+    // ============================================================
     return upper.slice(0, 5).replace(/[^A-Z]/g, '');
 }
 
