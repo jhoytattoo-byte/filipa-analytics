@@ -17,9 +17,16 @@ function isB3Symbol(symbol, ativo) {
     const s = (symbol || '').toUpperCase();
     const a = (ativo || '').toUpperCase();
     if (s.startsWith('^')) return true;
-    const acoesB3 = ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'B3SA3', 'WEGE3', 'MGLU3',
-                     'MXRF11', 'HGLG11', 'VISC11', 'KNRI11'];  // ← FIIs
+    
+    
+    
+    // Ações B3 + FIIs
+    const acoesB3 = [
+        'PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'B3SA3', 'WEGE3', 'MGLU3',
+        'MXRF11', 'HGLG11', 'VISC11', 'KNRI11'
+    ];
     if (acoesB3.includes(s)) return true;
+    
     return false;
 }
 

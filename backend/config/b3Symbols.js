@@ -6,11 +6,11 @@
 // ============================================================
 
 const B3_SYMBOLS = {
-    // === Mini contratos (BM&F) — cotados em PONTOS ===
-    WIN: { api: '^BVSP', fonte: 'brapi', nome: 'Mini Índice', tipo: 'pontos' },
-    WDO: { api: 'USDBRL', fonte: 'twelvedata', nome: 'Mini Dólar', tipo: 'pontos' },
-    IND: { api: '^BVSP', fonte: 'brapi', nome: 'Índice Cheio', tipo: 'pontos' },
-    DOL: { api: 'USDBRL', fonte: 'twelvedata', nome: 'Dólar Cheio', tipo: 'pontos' },
+        // === Mini contratos (BM&F) — cotados em PONTOS ===
+    WIN: { api: '^BVSP',  fonte: 'brapi', nome: 'Mini Índice', tipo: 'pontos' },
+    WDO: { api: 'USD/BRL', fonte: 'twelvedata', nome: 'Mini Dólar', tipo: 'pontos' },
+    IND: { api: '^BVSP',  fonte: 'brapi', nome: 'Índice Cheio', tipo: 'pontos' },
+    DOL: { api: 'USD/BRL', fonte: 'twelvedata', nome: 'Dólar Cheio', tipo: 'pontos' },
 
     // === Micro cripto (B3) — cotados em PONTOS ===
     BIT: { api: 'BTC/USD', fonte: 'twelvedata', nome: 'Micro Bitcoin', tipo: 'pontos' },
