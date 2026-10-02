@@ -328,10 +328,16 @@ const Vision = {
             // ✅ Usa a tendência macro VINDA DO BACKEND (não sobrescreve!)
             const tendencia = curador.tendencia_macro || visao.tendencia || 'LATERAL';
 
-            const c = parseInt(decisao.confianca) || 50;
-            const d = decisao.direcao || 'NEUTRO';
+                        const c = parseInt(decisao.confianca) || 50;
+            let d = decisao.direcao || 'NEUTRO';
+            
+            // 🔥 Se vier NEUTRO do backend (não deveria), força direção pela tendência
+            if (d === 'NEUTRO' || d === 'AGUARDAR' || !d) {
+                console.warn('[VISION] ⚠️ Backend retornou NEUTRO — forçando direção pela tendência');
+                d = (tendencia === 'ALTA') ? 'COMPRA' : (tendencia === 'BAIXA') ? 'VENDA' : 'COMPRA';
+            }
+            
             let probBuy, probSell;
-
             if (d === 'COMPRA') {
                 probBuy = c >= 50 ? c : 100 - c;
                 probSell = c >= 50 ? 100 - c : c;
@@ -343,7 +349,7 @@ const Vision = {
                 probSell = 50;
             }
 
-            const resultado = {
+                        const resultado = {
                 ativo: visao.ativo || 'N/A',
                 timeframe: visao.timeframe || 'N/A',
                 direcao: d,
@@ -355,6 +361,7 @@ const Vision = {
                 qualidade: this.calcularQualidade(c, quant.score_final),
                 justificativa: decisao.justificativa || 'Analise concluida.',
                 riscos: decisao.risco_principal || 'Riscos nao identificados.',
+                aviso: decisao.aviso || '',   // 🔥 NOVO — aviso do Claude
                 precoAtual: estrategia.preco_atual || estrategia.preco_entrada || '--',
                 stopLoss: estrategia.stop_loss || '--',
                 takeProfit: estrategia.alvo1 || estrategia.take_profit || '--',
@@ -478,12 +485,15 @@ const Vision = {
             this.setText('timingNews', dados.noticias);
         }
 
-        const analiseEl = document.getElementById('analysisText');
+               const analiseEl = document.getElementById('analysisText');
         if (analiseEl) {
             analiseEl.style.display = 'block';
             
             let mensagemRiscos = '';
-            if (dados.confianca < 70 || dados.qualidade === 'C' || dados.qualidade === 'D') {
+            if (dados.aviso) {
+                // 🔥 Aviso do Claude (prioridade máxima)
+                mensagemRiscos = `⚠️ <strong style="color:#ffaa00">AVISO:</strong> ${dados.aviso}`;
+            } else if (dados.confianca < 70 || dados.qualidade === 'C' || dados.qualidade === 'D') {
                 mensagemRiscos = `⚠️ <strong style="color:#ffaa00">AVISO OPERACIONAL:</strong> Confiança ${dados.confianca}% e Qualidade ${dados.qualidade}. Sinal fraco. Se decidir operar, reduza o tamanho da posição (Qtd = 1) e use Stop Loss obrigatório.`;
             } else {
                 mensagemRiscos = dados.riscos || 'Riscos não identificados. Sinal forte.';

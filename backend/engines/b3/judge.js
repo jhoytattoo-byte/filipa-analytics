@@ -21,18 +21,24 @@ async function execute(data, requestId, config) {
     const supertrendLongo = quant.supertrend_longo || visao.supertrend_longo || null;
     const supertrendValor = quant.supertrend_valor || visao.supertrend_valor || null;
     
-    // ✅ CALCULANDO A DECISÃO COM O SCORE DO QUANT
+        // ✅ CALCULANDO A DECISÃO COM O SCORE DO QUANT
     const confianca = motor.calcularConfidence(scoreFinal);
     const qualidade = motor.calcularQualidade(scoreFinal, confianca, true);
-    const direcao = motor.calcularDirecao(scoreFinal);
+    
+    // 🔥 FORÇA DIREÇÃO (nunca NEUTRO)
+    let direcao = motor.calcularDirecao(scoreFinal);
+    if (direcao === 'NEUTRO' || !direcao) {
+        if (scoreFinal > 0) {
+            direcao = 'COMPRA';
+        } else if (scoreFinal < 0) {
+            direcao = 'VENDA';
+        } else {
+            direcao = (tendencia === 'ALTA') ? 'COMPRA' : 'VENDA';
+            logger.info(`[B3 Judge] ℹ️ Score 0 — usando tendência ${tendencia} → ${direcao}`, { requestId });
+        }
+    }
+    
     const justificativa = motor.calcularJustificativa(scoreFinal, direcao);
-    const riscos = motor.calcularRiscos(scoreFinal, direcao, {
-        rsi,
-        tendencia,
-        supertrend_curto: supertrendCurto,
-        supertrend_medio: supertrendMedio,
-        supertrend_longo: supertrendLongo
-    });
     
     // 🔥 RISK GATE (Validação de dados e tendência)
     const ancoragemValida = contexto?.ancoragem_valida !== false;
@@ -60,9 +66,9 @@ async function execute(data, requestId, config) {
     
     if (precisaIA) {
         try {
-            const promptJuiz = `Você é a Filipa, juíza de trading.
-                
-Analise os dados abaixo e decida se deve COMPRA, VENDA ou AGUARDAR.
+                       const promptJuiz = `Você é a Filipa, juíza de trading.
+
+Analise os dados abaixo e SEMPRE indique COMPRA ou VENDA (nunca AGUARDAR ou NEUTRO).
 
 DADOS:
 - Ativo: ${ativo}
@@ -73,19 +79,21 @@ DADOS:
 - Confiança do motor: ${confianca}%
 - Qualidade: ${qualidade}
 
-REGRAS:
-1. Score próximo de 0 + tendência lateral → AGUARDAR
-2. Score positivo + RSI saudável → COMPRA
-3. Score negativo + RSI saudável → VENDA
-4. Se tiver dúvida, prefira AGUARDAR
+REGRAS CRÍTICAS:
+1. NUNCA use "AGUARDAR" ou "NEUTRO" — o trader decide se opera
+2. Se o sinal for fraco, indique a direção MAS com qualidade baixa (C ou D) e aviso
+3. Score positivo OU tendência de alta → COMPRA
+4. Score negativo OU tendência de baixa → VENDA
+5. Se estiver em dúvida, escolha a direção da tendência macro
 
 Responda APENAS este JSON:
 {
-  "direcao": "COMPRA | VENDA | AGUARDAR",
+  "direcao": "COMPRA | VENDA",
   "confianca": 50-90,
   "qualidade": "A | B | C | D",
   "justificativa": "explicação curta em português",
-  "risco_principal": "risco principal ou 'Riscos não identificados'"
+  "risco_principal": "risco principal ou 'Riscos não identificados'",
+  "aviso": "aviso curto se qualidade for C ou D (opcional)"
 }`;
             
             const respostaIA = await anthropicService.complete(promptJuiz, {
@@ -117,13 +125,14 @@ Responda APENAS este JSON:
                 
                 logger.info(`[B3 Judge] ✅ Decisão FINAL (Claude): ${direcaoIA} ${confiancaIA}%`, { requestId });
                 
-                return {
+                               return {
                     direcao: direcaoIA,
                     confianca: confiancaIA,
                     qualidade: qualidadeIA,
                     timing: confiancaIA >= 80 ? 'AGORA' : 'PROXIMA_VELA',
                     justificativa: `🤖 Claude: ${parsedIA.justificativa}`,
                     risco_principal: parsedIA.risco_principal || 'Riscos não identificados',
+                    aviso: parsedIA.aviso || '',   // 🔥 NOVO
                     estrategia: {
                         preco_atual: precoIA,
                         stop_loss: stopLossIA,
@@ -135,25 +144,38 @@ Responda APENAS este JSON:
                 };
             }
             
-            // Se Claude disse AGUARDAR, retorna NEUTRO
-            if (parsedIA.direcao === 'AGUARDAR') {
-                logger.info(`[B3 Judge] ⏸️ Claude sugeriu AGUARDAR`, { requestId });
+                       // 🔥 Se Claude retornou algo inesperado (AGUARDAR/NEUTRO), força direção
+            if (parsedIA.direcao === 'AGUARDAR' || parsedIA.direcao === 'NEUTRO' || !parsedIA.direcao) {
+                logger.warn(`[B3 Judge] ⚠️ Claude retornou "${parsedIA.direcao}" — forçando direção pelo motor local`, { requestId });
                 
-                return {
-                    direcao: 'NEUTRO',
-                    confianca: parseInt(parsedIA.confianca) || 50,
-                    qualidade: parsedIA.qualidade || 'D',
+                // Determina direção forçada: score > 0 → COMPRA; score < 0 → VENDA; score = 0 → tendência
+                let direcaoForcada;
+                if (scoreFinal > 0) direcaoForcada = 'COMPRA';
+                else if (scoreFinal < 0) direcaoForcada = 'VENDA';
+                else {
+                    direcaoForcada = (tendencia === 'ALTA') ? 'COMPRA' : 'VENDA';
+                }
+                
+                const precoForcado = formatarPrecoPorAtivo(parseFloat(visao.preco_atual) || 0, ativo);
+                const stopLossForcado = motor.calcularStopLoss(precoForcado, direcaoForcada, ativo, null, config);
+                const takeProfitForcado = motor.calcularTakeProfit(precoForcado, direcaoForcada, stopLossForcado, ativo);
+                
+                              return {
+                    direcao: direcaoForcada,
+                    confianca: parseInt(parsedIA.confianca) || confianca,
+                    qualidade: parsedIA.qualidade || qualidade || 'D',
                     timing: 'PROXIMA_VELA',
-                    justificativa: `⏸️ ${parsedIA.justificativa || 'Aguardar sinal mais forte.'}`,
+                    justificativa: `⚠️ ${parsedIA.justificativa || 'Sinal fraco'} (motor local: ${direcaoForcada})`,
                     risco_principal: parsedIA.risco_principal || 'Riscos não identificados',
+                    aviso: parsedIA.aviso || '',   // 🔥 NOVO
                     estrategia: {
-                        preco_atual: formatarPrecoPorAtivo(parseFloat(visao.preco_atual) || 0, ativo),
-                        stop_loss: null,
-                        alvo1: null,
-                        entrada: 'AGUARDAR',
+                        preco_atual: precoForcado,
+                        stop_loss: stopLossForcado,
+                        alvo1: takeProfitForcado,
+                        entrada: 'AGORA',
                         points_mode: false
                     },
-                    fonte_decisao: 'claude_fallback'
+                    fonte_decisao: 'claude_fallback_forcado'
                 };
             }
             
@@ -195,13 +217,14 @@ Responda APENAS este JSON:
                  ativoUpper.includes('ITUB');
     const pointsMode = isB3;
     
-    return {
+       return {
         direcao,
         confianca,
         qualidade,
         timing: confianca >= 80 ? 'AGORA' : 'PROXIMA_VELA',
         justificativa: justificativaFinal,
         risco_principal: riscos,
+        aviso: '',   // 🔥 NOVO (motor local não gera aviso)
         estrategia: {
             preco_atual: preco,
             stop_loss: stopLoss,
