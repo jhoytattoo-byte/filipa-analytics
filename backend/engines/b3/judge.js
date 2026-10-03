@@ -86,6 +86,11 @@ REGRAS CRÍTICAS:
 4. Score negativo OU tendência de baixa → VENDA
 5. Se estiver em dúvida, escolha a direção da tendência macro
 
+REGRAS DE VOCABULÁRIO OBRIGATÓRIAS:
+- RSI > 70 → chamar de "sobreCOMPRA" (mercado subiu demais)
+- RSI < 30 → chamar de "sobreVENDA" (mercado caiu demais)
+- NUNCA troque os termos — o trader vai notar
+
 Responda APENAS este JSON:
 {
   "direcao": "COMPRA | VENDA",
