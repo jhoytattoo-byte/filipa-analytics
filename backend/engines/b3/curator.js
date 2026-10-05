@@ -22,7 +22,7 @@ async function execute(visionData, requestId, config) {
 
    // 🔥 DETECTA SE É CONTRATO FUTURO (WIN, WDO, IND, DOL)
   // Futuros têm ágio sobre o spot → não faz sentido validar divergência
-  const isFuturo = /^(WIN|WDO|IND|DOL)/i.test(visionData.ativo);
+  const isFuturo = /^(WIN|WDO|IND|DOL|BIT|ETH|SOL|GLD|BGI)/i.test(visionData.ativo);
   
   if (simboloAPI) {
     logger.info(`[B3 Curator] Símbolo API: ${simboloAPI} (${b3Info.nome})`, { requestId });

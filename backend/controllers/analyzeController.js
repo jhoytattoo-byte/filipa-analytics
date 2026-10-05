@@ -4,7 +4,7 @@
 const pipeline = require('../pipeline/pipeline');
 const logger = require('../utils/logger');
 
-const PIPELINE_TIMEOUT = 60000;
+const PIPELINE_TIMEOUT = 120000;  // 120s (2 min)
 
 async function analyze(req, res) {
     const requestId = req.id || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
