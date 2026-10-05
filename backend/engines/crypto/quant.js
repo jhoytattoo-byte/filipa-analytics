@@ -4,6 +4,20 @@ async function execute(visionData, requestId, config) {
   logger.info('[Crypto Quant] Calculando indicadores para cripto', { requestId });
   
   const candles = visionData.candles_reais || [];
+  
+  // 🔥 FASE 3: guarda contra candles vazios/insuficientes
+  if (!Array.isArray(candles) || candles.length < 5) {
+    logger.warn(`[Crypto Quant] ⚠️ Candles insuficientes (${candles.length}) — retornando NEUTRO`, { requestId });
+    return {
+      score: 0,
+      rsi: 50,
+      confidence: null,
+      candles_validos: candles.length,
+      direcao_quant: 'NEUTRO',
+      percent_mode: true
+    };
+  }
+  
   const rsi = calcularRSI(candles, config.quant.rsi_period || 14);
   
   // Análise de momentum para crypto (mais sensível)
@@ -17,8 +31,8 @@ async function execute(visionData, requestId, config) {
   else if (verdes <= 2) score = -2;
   
   // Ajuste por RSI (crypto é mais volátil, thresholds diferentes)
-  if (rsi > 75) score -= 1; // Sobrecompra mais extrema
-  else if (rsi < 25) score += 1; // Sobrevenda mais extrema
+  if (rsi > 75) score -= 1;
+  else if (rsi < 25) score += 1;
   
   const result = {
     score,
