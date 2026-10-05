@@ -1,4 +1,4 @@
-// engines/otc/quant.js — Caminho absoluto garantido
+// engines/otc/quant.js — Caminho absoluto garantido + guarda contra vazio
 const path = require('path');
 const logger = require(path.join(__dirname, '..', '..', 'utils', 'logger'));
 
@@ -10,6 +10,18 @@ async function execute(visionData, requestId, config) {
   logger.info('[OTC Quant] Usando quantEngine_otc.analyzeOTC', { requestId });
   
   const candles = visionData.candles_reais || [];
+  
+  // 🔥 FASE 3: guarda contra candles vazios/insuficientes
+  if (!Array.isArray(candles) || candles.length < 5) {
+    logger.warn(`[OTC Quant] ⚠️ Candles insuficientes (${candles.length}) — retornando NEUTRO`, { requestId });
+    return {
+      score: 0,
+      rsi: 50,
+      confidence: null,
+      candles_validos: candles.length,
+      direcao_quant: 'NEUTRO'
+    };
+  }
   
   try {
     const result = quantEngineOTC.analyzeOTC(candles);
@@ -25,7 +37,7 @@ async function execute(visionData, requestId, config) {
     return {
       score: 0,
       rsi: 50,
-      confidence: 50,
+      confidence: null,
       candles_validos: candles.length,
       direcao_quant: 'NEUTRO'
     };
