@@ -57,18 +57,22 @@ async function execute({
         if (dadosReais) {
             tendenciaMacro = dadosReais.tendencia_macro || 'LATERAL';
 
-            if (validateDivergence) {
-                const precoVision = parseFloat(visionData.preco_atual);
-                if (precoVision && dadosReais.preco_real) {
-                    const divergencia = Math.abs(precoVision - dadosReais.preco_real);
-                    if (divergencia > divergenceThreshold) {
-                        ancoragemValida = false;
-                        logger.warn(`[${marketName} Curator] ⚠️ Divergência de ${divergencia.toFixed(2)} detectada!`, { requestId });
-                    }
-                }
-            } else {
-                logger.info(`[${marketName} Curator] ℹ️ Validação cruzada desativada para este mercado`, { requestId });
-            }
+          if (validateDivergence) {
+    const precoVision = parseFloat(visionData.preco_atual);
+    if (precoVision && dadosReais.preco_real) {
+        // 🔥 FIX: divergência em PERCENTUAL (não absoluto)
+        const divergenciaPercent = Math.abs((precoVision - dadosReais.preco_real) / dadosReais.preco_real) * 100;
+        
+        if (divergenciaPercent > divergenceThreshold) {
+            ancoragemValida = false;
+            logger.warn(`[${marketName} Curator] ⚠️ Divergência de ${divergenciaPercent.toFixed(2)}% detectada (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
+        } else {
+            logger.info(`[${marketName} Curator] ✅ Divergência OK: ${divergenciaPercent.toFixed(2)}% (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
+        }
+    }
+} else {
+    logger.info(`[${marketName} Curator] ℹ️ Validação cruzada desativada para este mercado`, { requestId });
+}
         }
     } else {
         logger.warn(`[${marketName} Curator] Ativo não mapeado: ${visionData.ativo}`, { requestId });
