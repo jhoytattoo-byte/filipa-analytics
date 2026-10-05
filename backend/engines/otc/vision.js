@@ -1,10 +1,10 @@
-const qwenService = require('../../services/qwen');
+const groqService = require('../../services/groq');
 const logger = require('../../utils/logger');
 
 async function execute(imageBase64, requestId, config) {
-  logger.info('[OTC Vision] 🔴 Turbo Mode — Qwen direto', { requestId });
+  logger.info('[OTC Vision] 🟢 Groq Vision (grátis)', { requestId });
   
-  const rawResponse = await qwenService.vision(imageBase64);
+  const rawResponse = await groqService.vision(imageBase64);
   
   let visionData;
   try {
