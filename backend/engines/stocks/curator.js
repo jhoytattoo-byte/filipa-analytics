@@ -16,7 +16,7 @@ async function execute(visionData, requestId, config) {
         getSymbolFn: getStockSymbol,
         getSessionFn: detectarSessaoStocks,
         validateDivergence: true,     // ✅ TwelveData cobre EUA
-        divergenceThreshold: 2,        // 2% (ações oscilam pouco intradiário)
+        divergenceThreshold: 5,   // 5% (tolerante a diferenças de fonte/spread)
     });
 }
 
