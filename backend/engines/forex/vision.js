@@ -15,30 +15,28 @@ async function execute(imageBase64, requestId, config) {
     throw new Error('JSON inválido do Vision');
   }
   
-  // 🔥 CORREÇÃO: garante que candles é array
+  // 🔥 FASE 2: garante que candles é array (tolerante a undefined)
   let candles = visionData.candles;
   if (!Array.isArray(candles)) {
-    // Tenta outros nomes comuns
     candles = visionData.candlesticks || visionData.candles_reais || [];
   }
   if (!Array.isArray(candles)) candles = [];
-  
-  const total = config.quant.candles || 50;
-  
-  if (candles.length === 0) {
-    // Gera candles sintéticos
-    logger.warn(`[Forex Vision] ⚠️ Modelo não retornou candles — gerando ${total} sintéticos`, { requestId });
-    const precoBase = parseFloat(visionData.preco_atual) || 1.1600;
-    visionData.candles_reais = Array(total).fill(null).map(() => ({
+
+  // 🔥 FASE 2: usa candles REAIS do Qwen (não inventa)
+  if (candles.length >= 5) {
+    visionData.candles_reais = candles.map(c => ({
       time: null,
-      open: precoBase + (Math.random() - 0.5) * 0.0050,
-      close: precoBase + (Math.random() - 0.5) * 0.0050,
-      high: precoBase + 0.0025,
-      low: precoBase - 0.0025,
-      cor: Math.random() > 0.5 ? 'verde' : 'vermelha'
+      open: parseFloat(c.open) || 0,
+      close: parseFloat(c.close) || 0,
+      high: parseFloat(c.high) || 0,
+      low: parseFloat(c.low) || 0,
+      cor: c.cor || (parseFloat(c.close) > parseFloat(c.open) ? 'verde' : 'vermelha')
     }));
+    logger.info(`[Forex Vision] ✅ Usando ${visionData.candles_reais.length} candles REAIS do Qwen`, { requestId });
   } else {
-    visionData.candles_reais = candles;
+    // ❌ Sem candles do Qwen — retorna vazio (NÃO INVENTA)
+    logger.warn(`[Forex Vision] ⚠️ Qwen não retornou candles suficientes (${candles.length}) — retornando vazio`, { requestId });
+    visionData.candles_reais = [];
   }
   
   visionData.is_otc = false;
