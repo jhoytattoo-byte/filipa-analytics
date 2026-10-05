@@ -26,20 +26,54 @@ async function vision(image, model) {
     try {
         console.log(`[Vision] 🟢 PRIORIDADE 1: Groq Vision (GRÁTIS) com ${modelName}`);
         
-        const response = await groq.chat.completions.create({
-            model: modelName,
-            messages: [
-                { role: 'system', content: prompts.vision },
-                { role: 'user', content: [
-                    { type: 'text', text: 'Extraia os dados do gráfico e retorne APENAS JSON válido.' },
-                    { type: 'image_url', image_url: { url: 'data:image/png;base64,' + image } }
-                ]}
-            ],
-            temperature: config.groq.temperature || 0,
-            max_tokens: 800,
-            response_format: { type: 'json_object' },
-            reasoning_format: 'hidden'
-        });
+       const promptVision = `Você é um extrator de dados de gráficos financeiros. Sua ÚNICA função é retornar JSON válido.
+
+REGRAS CRÍTICAS:
+1. Retorne APENAS o JSON, sem texto antes ou depois
+2. Sem explicações, sem comentários, sem markdown
+3. Se não conseguir extrair algum campo, use valor padrão
+4. Para os CANDLES, extraia TODOS os candles visíveis no gráfico (mínimo 20)
+
+Extraia do gráfico:
+- Ativo (ex: WINV26, WDOV26, PETR4, VALE3)
+- Timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d)
+- Tendência visual (ALTA, BAIXA, LATERAL)
+- Preço atual (número puro)
+- RSI estimado (0-100)
+- Padrão de candle predominante
+- Confiança da análise (0-100)
+- CANDLES: array com TODOS os candles visíveis (open, close, high, low, cor)
+
+JSON OBRIGATÓRIO:
+{
+  "ativo": "WINV26",
+  "timeframe": "15m",
+  "tendencia": "ALTA",
+  "preco_atual": 175000,
+  "rsi": 55,
+  "padrao_candle": "martelo",
+  "confianca": 85,
+  "candles": [
+    { "open": 174800, "close": 175100, "high": 175200, "low": 174700, "cor": "verde" },
+    ... (mínimo 20 candles)
+  ]
+}
+
+Responda APENAS o JSON. NADA MAIS.`;
+
+const response = await groq.chat.completions.create({
+    model: modelName,
+    messages: [
+        { role: 'user', content: [
+            { type: 'text', text: promptVision },
+            { type: 'image_url', image_url: { url: 'data:image/png;base64,' + image } }
+        ]}
+    ],
+    temperature: config.groq.temperature || 0,
+    max_tokens: 2000,  // aumentado (candles ocupam espaço)
+    response_format: { type: 'json_object' },
+    reasoning_format: 'hidden'
+});
         
         console.log('[Vision] ✅ Groq OK (GRÁTIS!)');
         return response.choices[0].message.content;
