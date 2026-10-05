@@ -4,6 +4,20 @@ async function execute(visionData, requestId, config) {
   logger.info('[Commodities Quant] Calculando indicadores para Commodities', { requestId });
   
   const candles = visionData.candles_reais || [];
+  
+  // 🔥 FASE 3: guarda contra candles vazios/insuficientes
+  if (!Array.isArray(candles) || candles.length < 5) {
+    logger.warn(`[Commodities Quant] ⚠️ Candles insuficientes (${candles.length}) — retornando NEUTRO`, { requestId });
+    return {
+      score: 0,
+      rsi: 50,
+      confidence: null,
+      candles_validos: candles.length,
+      direcao_quant: 'NEUTRO',
+      percent_mode: true
+    };
+  }
+  
   const rsi = calcularRSI(candles, config.quant.rsi_period || 14);
   
   const ultimos = candles.slice(-5);
