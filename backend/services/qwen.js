@@ -54,7 +54,13 @@ REGRAS CRÍTICAS:
 3. Se não conseguir extrair algum campo, use valor padrão
 4. Para os CANDLES, extraia TODOS os candles visíveis no gráfico (mínimo 20)
 
-⚠️ ATENÇÃO AO PREÇO (CRÍTICO):
+🚨 REGRA #1 — PREÇO (PRIORIDADE MÁXIMA):
+Você DEVE respeitar o ponto decimal. Exemplos:
+- Forex (EUR/USD): "1.136725" (NÃO "1136725")
+- Ações (AAPL): "334.12" (NÃO "334120")
+- Crypto (BTC): "85000.50" (NÃO "8500050")
+- B3 WIN/WDO: "175000" (inteiro, correto)
+Se você remover o ponto decimal, sua resposta está ERRADA.
 - Ações (AAPL, TSLA, NVDA): ponto decimal → 334.12 (NÃO 334120)
 - Forex (EUR/USD, GBP/USD): ponto decimal → 1.12345 (NÃO 112345)
 - Crypto (BTC, ETH): ponto decimal → 85000.50 (NÃO 8500050)
