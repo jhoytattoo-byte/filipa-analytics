@@ -47,8 +47,20 @@ async function execute(visionData, requestId, config) {
 
   let contextoIA = '';
   try {
-    const promptCurador = prompts.curador;
-    const resposta = await groqService.text(promptCurador);
+    // 🔥 FIX: monta prompt DINÂMICO com contexto (igual ao curatorShared)
+    const promptDinamico = `${prompts.curador}
+
+DADOS ATUAIS DO MERCADO:
+- Ativo: ${visionData.ativo || 'N/A'}
+- Timeframe: ${visionData.timeframe || 'N/A'}
+- Preço atual: ${visionData.preco_atual || 'N/A'}
+- RSI: ${visionData.rsi || 'N/A'}
+- Tendência visual: ${visionData.tendencia || 'N/A'}
+- Dados reais de mercado: ${dadosReais ? `preço real = ${dadosReais.preco_real}, tendência = ${dadosReais.tendencia_macro}` : 'indisponível'}
+
+Responda APENAS o JSON. Sem markdown, sem explicações.`;
+
+    const resposta = await groqService.text(promptDinamico);
 
     logger.info(`[B3 Curator] 🔍 Resposta bruta (200 chars): ${(resposta || '').substring(0, 200)}`, { requestId });
 
