@@ -53,7 +53,7 @@ async function execute(visionData, requestId, config) {
     let contextoIA = '';
   try {
     const promptCurador = prompts.curador;
-    const resposta = await groqService.text(promptCurador, 'qwen/qwen3.8-27b');
+    const resposta = await groqService.text(promptCurador);
     
     // 🔥 CORREÇÃO: extrai o JSON mesmo se vier dentro de ```json ... ```
     let textoLimpo = (resposta || '').trim();
