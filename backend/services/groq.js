@@ -130,15 +130,16 @@ async function text(prompt, model) {
     try {
         const modelName = model || config.groq.textModel || 'openai/gpt-oss-120b';
         
-        const response = await groq.chat.completions.create({
-            model: modelName,
-            messages: [
-                { role: 'system', content: 'Você é FILIPA, uma IA especialista em trading.' },
-                { role: 'user', content: prompt }
-            ],
-            temperature: config.groq.temperature || 0,
-            max_tokens: 800,
-        });
+      const response = await groq.chat.completions.create({
+    model: modelName,
+    messages: [
+        { role: 'system', content: 'Você é FILIPA, uma IA especialista em trading. Responda SEMPRE em JSON válido.' },
+        { role: 'user', content: prompt }
+    ],
+    temperature: config.groq.temperature || 0,
+    max_tokens: 800,
+    response_format: { type: 'json_object' },  // ← ADICIONAR
+});
         
         console.log('[Text] ✅ Groq Text OK (GRÁTIS!)');
         return response.choices[0].message.content;
