@@ -1,11 +1,11 @@
 // ============================================================
-// curatorShared.js — v1.1
+// curatorShared.js — v1.2
 // Lógica comum de Curador para todos os mercados
 // ============================================================
 // Cada engine (B3, Forex, OTC, etc.) chama esta função passando
 // sua configuração específica (sessão, símbolos, tipo de ativo).
 //
-// Regra de ouro: GRÁTIS PRIMEIRO, PAGO COMO FALLBACK.
+// Regra de ouro: DEEPSEEK PRINCIPAL (qualidade), GROQ COMO FALLBACK.
 // ============================================================
 
 const logger = require('../utils/logger');
@@ -15,16 +15,6 @@ const prompts = require('../config/prompts');
 
 /**
  * Executa o Curador genérico.
- *
- * @param {Object} opts
- * @param {Object} opts.visionData - Dados extraídos pela Vision
- * @param {string} opts.requestId - ID da requisição
- * @param {Object} opts.config - Config global
- * @param {string} opts.marketName - Nome do mercado (ex: 'Forex')
- * @param {Function} opts.getSymbolFn - Função ativo → símbolo API
- * @param {Function} opts.getSessionFn - Função que retorna sessão atual
- * @param {boolean} [opts.validateDivergence=false] - Se valida divergência
- * @param {number} [opts.divergenceThreshold=50] - Threshold de divergência
  */
 async function execute({
     visionData,
@@ -57,28 +47,28 @@ async function execute({
         if (dadosReais) {
             tendenciaMacro = dadosReais.tendencia_macro || 'LATERAL';
 
-          if (validateDivergence) {
-    const precoVision = parseFloat(visionData.preco_atual);
-    if (precoVision && dadosReais.preco_real) {
-        // 🔥 FIX: divergência em PERCENTUAL (não absoluto)
-        const divergenciaPercent = Math.abs((precoVision - dadosReais.preco_real) / dadosReais.preco_real) * 100;
-        
-        if (divergenciaPercent > divergenceThreshold) {
-            ancoragemValida = false;
-            logger.warn(`[${marketName} Curator] ⚠️ Divergência de ${divergenciaPercent.toFixed(2)}% detectada (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
-        } else {
-            logger.info(`[${marketName} Curator] ✅ Divergência OK: ${divergenciaPercent.toFixed(2)}% (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
-        }
-    }
-} else {
-    logger.info(`[${marketName} Curator] ℹ️ Validação cruzada desativada para este mercado`, { requestId });
-}
+            if (validateDivergence) {
+                const precoVision = parseFloat(visionData.preco_atual);
+                if (precoVision && dadosReais.preco_real) {
+                    // 🔥 FIX: divergência em PERCENTUAL (não absoluto)
+                    const divergenciaPercent = Math.abs((precoVision - dadosReais.preco_real) / dadosReais.preco_real) * 100;
+
+                    if (divergenciaPercent > divergenceThreshold) {
+                        ancoragemValida = false;
+                        logger.warn(`[${marketName} Curator] ⚠️ Divergência de ${divergenciaPercent.toFixed(2)}% detectada (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
+                    } else {
+                        logger.info(`[${marketName} Curator] ✅ Divergência OK: ${divergenciaPercent.toFixed(2)}% (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
+                    }
+                }
+            } else {
+                logger.info(`[${marketName} Curator] ℹ️ Validação cruzada desativada para este mercado`, { requestId });
+            }
         }
     } else {
         logger.warn(`[${marketName} Curator] Ativo não mapeado: ${visionData.ativo}`, { requestId });
     }
 
-    // 4. Chama IA (Groq grátis) com contexto básico
+    // 4. Chama IA (DeepSeek principal via groqService.text)
     let contextoIA = '';
     try {
         // 🔥 Monta prompt dinâmico com contexto
@@ -94,7 +84,11 @@ DADOS ATUAIS DO MERCADO:
 
 Responda APENAS o JSON. Sem markdown, sem explicações.`;
 
-        const resposta = await groqService.text(promptDinamico, 'qwen/qwen3.8-27b');
+        // 🔥 FIX: removido o modelo hardcoded 'qwen/qwen3.8-27b'
+        const resposta = await groqService.text(promptDinamico);
+
+        // 🔍 DEBUG: mostra o que o modelo respondeu
+        logger.info(`[${marketName} Curator] 🔍 Resposta bruta (200 chars): ${(resposta || '').substring(0, 200)}`, { requestId });
 
         // Parse robusto (aceita markdown ```json ... ```)
         let textoLimpo = (resposta || '').trim();
@@ -103,6 +97,13 @@ Responda APENAS o JSON. Sem markdown, sem explicações.`;
 
         const parsed = JSON.parse(textoLimpo);
         contextoIA = parsed.opiniao || '';
+
+        // ✅ LOG explícito: avisa se o modelo não retornou "opiniao"
+        if (!contextoIA) {
+            logger.warn(`[${marketName} Curator] ⚠️ Modelo retornou JSON sem campo "opiniao". Chaves: ${Object.keys(parsed).join(', ')}`, { requestId });
+        } else {
+            logger.info(`[${marketName} Curator] ✅ IA gerou contexto: "${contextoIA.substring(0, 100)}..."`, { requestId });
+        }
     } catch (e) {
         logger.warn(`[${marketName} Curator] ⚠️ IA falhou: ${e.message}`, { requestId });
         contextoIA = '';
