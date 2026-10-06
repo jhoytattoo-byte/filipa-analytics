@@ -128,7 +128,7 @@ async function text(prompt, model) {
     // 🟢 PRIORIDADE 1: GROQ TEXT (GRÁTIS)
     // ============================================================
     try {
-        const modelName = model || config.groq.textModel || 'llama-3.3-70b-versatile';
+        const modelName = model || config.groq.textModel || 'openai/gpt-oss-120b';
         
         const response = await groq.chat.completions.create({
             model: modelName,
