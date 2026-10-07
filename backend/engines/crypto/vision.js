@@ -1,11 +1,11 @@
-const qwenService = require('../../services/qwen');
+const groqService = require('../../services/groq');
 const logger = require('../../utils/logger');
 
 async function execute(imageBase64, requestId, config) {
-  logger.info('[Crypto Vision] Qwen + padrões cripto (alta volatilidade)', { requestId });
-  
-  const rawResponse = await qwenService.vision(imageBase64);
-  
+  logger.info('[Crypto Vision] Groq + fallback Qwen (padrões cripto)', { requestId });
+
+  const rawResponse = await groqService.vision(imageBase64);
+
   let visionData;
   try {
     const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
@@ -13,7 +13,7 @@ async function execute(imageBase64, requestId, config) {
   } catch (e) {
     throw new Error('JSON inválido do Vision');
   }
-  
+
   // 🔥 FASE 2: garante que candles é array (tolerante a undefined)
   let candles = visionData.candles;
   if (!Array.isArray(candles)) {
@@ -21,7 +21,7 @@ async function execute(imageBase64, requestId, config) {
   }
   if (!Array.isArray(candles)) candles = [];
 
-  // 🔥 FASE 2: usa candles REAIS do Qwen (não inventa)
+  // 🔥 FASE 2: usa candles REAIS do Vision (não inventa)
   if (candles.length >= 5) {
     visionData.candles_reais = candles.map(c => ({
       time: null,
@@ -31,17 +31,16 @@ async function execute(imageBase64, requestId, config) {
       low: parseFloat(c.low) || 0,
       cor: c.cor || (parseFloat(c.close) > parseFloat(c.open) ? 'verde' : 'vermelha')
     }));
-    logger.info(`[Crypto Vision] ✅ Usando ${visionData.candles_reais.length} candles REAIS do Qwen`, { requestId });
+    logger.info(`[Crypto Vision] ✅ Usando ${visionData.candles_reais.length} candles REAIS`, { requestId });
   } else {
-    // ❌ Sem candles do Qwen — retorna vazio (NÃO INVENTA)
-    logger.warn(`[Crypto Vision] ⚠️ Qwen não retornou candles suficientes (${candles.length}) — retornando vazio`, { requestId });
+    logger.warn(`[Crypto Vision] ⚠️ Vision não retornou candles suficientes (${candles.length}) — retornando vazio`, { requestId });
     visionData.candles_reais = [];
   }
-  
+
   visionData.is_otc = false;
   visionData.fonte_dados = 'visual_crypto';
   visionData.percent_mode = true; // Crypto usa percentual
-  
+
   logger.info(`[Crypto Vision] ✅ ${visionData.ativo} | ${visionData.candles_reais.length} candles`, { requestId });
   return visionData;
 }
