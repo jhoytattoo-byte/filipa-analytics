@@ -1,5 +1,6 @@
 // ============================================================
-// SERVICE — QWEN3-VL-FLASH (DashScope)
+// SERVICE — QWEN VISION (DashScope)
+// Modelo: qwen3.6-flash (substituto oficial do qwen3-vl-flash)
 // ============================================================
 const OpenAI = require('openai');
 const config = require('../config/env');
@@ -10,9 +11,9 @@ const client = new OpenAI({
     baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1'
 });
 
-async function vision(image, model = 'qwen3-vl-flash') {
+async function vision(image, model = 'qwen3.6-flash') {
     const apiKey = config.qwen?.apiKey || process.env.DASHSCOPE_API_KEY;
-    
+
     if (!apiKey) {
         console.error('[Qwen] ❌ DASHSCOPE_API_KEY não configurada!');
         throw new Error('DASHSCOPE_API_KEY não encontrada');
@@ -24,7 +25,6 @@ async function vision(image, model = 'qwen3-vl-flash') {
         // Determina se a imagem é URL ou base64
         let imageUrl = image;
         if (!image.startsWith('http://') && !image.startsWith('https://')) {
-            // Se for base64, adiciona o prefixo
             if (!image.startsWith('data:image')) {
                 imageUrl = `data:image/png;base64,${image}`;
             } else {
@@ -68,7 +68,6 @@ Se você remover o ponto decimal, sua resposta está ERRADA.
 - B3 ações (PETR4, VALE3): ponto decimal → 38.45
 - Índices (S&P, IBOV): inteiro com separador → 5800.50
 - NUNCA remova o ponto decimal. Use o formato que aparece no gráfico.
-
 
 Extraia do gráfico:
 - Ativo (ex: WINV26, WDOV26, PETR4, VALE3)
@@ -115,17 +114,13 @@ IMPORTANTE: Responda APENAS o JSON acima preenchido. NADA MAIS.`
                     ]
                 }
             ],
-            stream: false,
-            // Desativa thinking para respostas mais rápidas
-            extra_body: {
-                enable_thinking: false
-            }
+            stream: false
         });
 
         console.log('[Qwen] ✅ Análise concluída!');
 
         const content = completion.choices[0]?.message?.content || '';
-        
+
         if (!content) {
             console.error('[Qwen] ❌ Resposta vazia');
             throw new Error('Resposta vazia da Qwen');
@@ -134,14 +129,14 @@ IMPORTANTE: Responda APENAS o JSON acima preenchido. NADA MAIS.`
         // Tenta parsear JSON
         try {
             const parsed = JSON.parse(content);
-            
-            // 🔥 Log de diagnóstico: quantos candles vieram?
+
+            // Log de diagnóstico: quantos candles vieram?
             if (parsed.candles && Array.isArray(parsed.candles)) {
                 console.log(`[Qwen] 📊 Candles extraídos: ${parsed.candles.length}`);
             } else {
                 console.warn('[Qwen] ⚠️ Modelo NÃO retornou campo "candles"');
             }
-            
+
             return JSON.stringify(parsed);
         } catch (e) {
             console.warn('[Qwen] ⚠️ Resposta não é JSON, tentando extrair...');
@@ -154,20 +149,20 @@ IMPORTANTE: Responda APENAS o JSON acima preenchido. NADA MAIS.`
 
     } catch (error) {
         console.error('[Qwen] ❌ Falhou:', error.message);
-        
+
         if (error.response) {
             console.error('[Qwen] Status:', error.response.status);
             console.error('[Qwen] Dados:', JSON.stringify(error.response.data, null, 2));
         }
-        
+
         throw error;
     }
 }
 
 // Versão com streaming (para análises longas)
-async function visionStream(image, model = 'qwen3-vl-flash') {
+async function visionStream(image, model = 'qwen3.6-flash') {
     const apiKey = config.qwen?.apiKey || process.env.DASHSCOPE_API_KEY;
-    
+
     if (!apiKey) {
         throw new Error('DASHSCOPE_API_KEY não encontrada');
     }
@@ -200,14 +195,11 @@ async function visionStream(image, model = 'qwen3-vl-flash') {
                 ]
             }
         ],
-        stream: true,
-        extra_body: {
-            enable_thinking: false
-        }
+        stream: true
     });
 
     let fullContent = '';
-    
+
     for await (const chunk of stream) {
         if (chunk.choices && chunk.choices[0]?.delta?.content) {
             fullContent += chunk.choices[0].delta.content;
