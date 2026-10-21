@@ -1,18 +1,10 @@
 // ============================================================
-// marketSelector.js — v1.0
-// Cascata: Categoria → Ativo
-// ============================================================
-// Este arquivo transforma o <select id="marketType"> em cascata.
-// O backend NÃO muda: o value enviado continua sendo b3_win, forex_eurusd, etc.
+// marketSelector.js — v1.1 (Opção "Outro Ativo")
 // ============================================================
 
 (function() {
     'use strict';
 
-    // ============================================================
-    // MAPA DE CATEGORIAS → ATIVOS
-    // Copiado exatamente do <select> antigo, sem alterar nenhum value
-    // ============================================================
     const MARKET_DATA = {
         b3: [
             { value: 'b3_win',    label: '📈 B3: Mini Índice (WIN)' },
@@ -96,20 +88,18 @@
         ]
     };
 
-    // ============================================================
-    // INICIALIZAÇÃO
-    // ============================================================
+    // 🚀 ADICIONA A OPÇÃO "OUTRO" EM TODOS OS MERCADOS
+    Object.keys(MARKET_DATA).forEach(cat => {
+        MARKET_DATA[cat].push({ value: 'outro', label: '🔍 Outro Ativo (Ler do Print)' });
+    });
+
     function init() {
         const categorySelect = document.getElementById('marketCategory');
         const wrapper = document.getElementById('marketTypeWrapper');
         const typeSelect = document.getElementById('marketType');
 
-        if (!categorySelect || !wrapper || !typeSelect) {
-            console.warn('[MarketSelector] Elementos não encontrados. Abortando.');
-            return;
-        }
+        if (!categorySelect || !wrapper || !typeSelect) return;
 
-        // Ao trocar a categoria, popula o select de ativos
         categorySelect.addEventListener('change', () => {
             const cat = categorySelect.value;
 
@@ -119,22 +109,16 @@
                 return;
             }
 
-            // Popula com os ativos da categoria (1º já vem pré-selecionado)
+            // Popula a lista com os ativos + a opção "Outro"
             typeSelect.innerHTML = MARKET_DATA[cat]
                 .map(opt => `<option value="${opt.value}">${opt.label}</option>`)
                 .join('');
 
-            // Mostra o 2º select
             wrapper.style.display = 'block';
-
-            // Log de diagnóstico
-            console.log(`[MarketSelector] Categoria "${cat}" → ${MARKET_DATA[cat].length} ativos, default: ${typeSelect.value}`);
+            console.log(`[MarketSelector] Categoria "${cat}" → ${MARKET_DATA[cat].length} ativos (incluindo 'Outro').`);
         });
-
-        console.log('[MarketSelector] Inicializado. Aguardando escolha de categoria.');
     }
 
-    // Espera o DOM carregar (funciona mesmo se o script for carregado antes)
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

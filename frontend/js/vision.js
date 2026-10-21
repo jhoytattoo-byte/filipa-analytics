@@ -262,6 +262,18 @@ const Vision = {
             }
             console.log('[VISION] Token:', token ? 'Presente' : 'Ausente');
             
+                       // 🚀 LÓGICA DO DESBLOQUEIO (Outro Ativo)
+            let selectedMarketType = marketTypeElement ? marketTypeElement.value : 'otc';
+            let ativoFinal = selectedMarketType;
+
+            // Se o usuário escolheu "Outro", a gente não envia o "outro", 
+            // envia apenas a categoria (ex: b3) e deixa o backend deduzir
+            if (selectedMarketType === 'outro') {
+                const categoria = document.getElementById('marketCategory').value;
+                ativoFinal = categoria; // Envia apenas 'b3', 'crypto', etc.
+                console.log('[VISION] 🚀 Opção "Outro" selecionada. Enviando mercado base:', categoria);
+            }
+
             const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 
@@ -270,7 +282,7 @@ const Vision = {
                 },
                 body: JSON.stringify({
                     image: this.currentImageBase64.split(',')[1],
-                    market_type: marketTypeElement ? marketTypeElement.value : 'otc',
+                    market_type: ativoFinal, // Agora envia o ativo ou a categoria base
                     source: lastExtract ? 'browser_engine' : 'manual',
                     chartData: lastExtract && lastExtract.chart ? lastExtract.chart : null
                 })
