@@ -954,9 +954,10 @@ const Vision = {
         }
     },
 
-    confirmTrade(direcao) {
+       confirmTrade(direcao) {
         if (!this.lastAnalysis) return;
         const dados = this.lastAnalysis;
+        
         const msg = `Confirmar ${direcao}?\n\n` +
             `Ativo: ${dados.ativo}\n` +
             `Confiança: ${dados.confianca}%\n` +
@@ -966,21 +967,41 @@ const Vision = {
 
         if (!confirm(msg)) return;
 
+        // Pega o valor do risco, ou usa 20 como fallback
+        const riskValueElement = document.getElementById('riskEntryValue')?.textContent;
+        const riskValue = riskValueElement 
+            ? parseFloat(riskValueElement.replace(/[^0-9.,]/g, '').replace(',', '.')) 
+            : 20;
+
         const trade = {
             date: new Date().toISOString(),
             pair: dados.ativo,
             direction: direcao,
-            result: null,
-            value: parseFloat(document.getElementById('riskEntryValue')?.textContent?.replace(/[^0-9.,]/g, '').replace(',', '.') || 20),
+            result: null, // Fica pendente até o usuário marcar WIN ou LOSS
+            value: riskValue || 20,
             timeframe: dados.timeframe,
             confidence: dados.confianca,
             stop_loss: dados.stopLoss,
             take_profit: dados.takeProfit
         };
 
-        if (typeof FilipaState !== 'undefined') FilipaState.addTrade(trade);
-        if (typeof Trading !== 'undefined') Trading.renderTrades();
-        if (typeof Alerts !== 'undefined') Alerts.add(`Trade ${direcao} registrado!`, 'success');
+        // 1. Adiciona ao estado global (salva no localStorage)
+        if (typeof FilipaState !== 'undefined') {
+            FilipaState.addTrade(trade);
+        }
+
+        // 2. Força a atualização da tabela e dos KPIs na aba Trading
+        if (typeof Trading !== 'undefined') {
+            Trading.renderTrades();
+            Trading.updateStats(); // Atualiza os KPIs (Win Rate, Payoff, etc.)
+        }
+
+        // 3. Avisa o usuário e limpa a tela
+        if (typeof Alerts !== 'undefined') {
+            Alerts.add(`Trade ${direcao} registrado! Vá em Market Pulse para gerenciar.`, 'success');
+        }
+        
+        this.dismissResult(); // Fecha o painel de resultado
     },
 
     dismissResult() {

@@ -842,15 +842,57 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
         </div>
       </div>
 
+            <!-- 🚀 PLANILHA INTELIGENTE - KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px">
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">🎯 Win Rate</div>
+          <div class="metric-value" id="kpiWinRate">0%</div>
+        </div>
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">⚖️ Payoff</div>
+          <div class="metric-value" id="kpiPayoff">1.0</div>
+        </div>
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">📈 Expectativa</div>
+          <div class="metric-value" id="kpiExpectativa">R$ 0.00</div>
+        </div>
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">💰 Lucro Total</div>
+          <div class="metric-value" id="kpiProfit">R$ 0.00</div>
+        </div>
+      </div>
+
+            <!-- 🚀 PLANILHA INTELIGENTE - KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px">
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">🎯 Win Rate</div>
+          <div class="metric-value" id="kpiWinRate">0%</div>
+        </div>
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">⚖️ Payoff</div>
+          <div class="metric-value" id="kpiPayoff">1.0</div>
+        </div>
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">📈 Expectativa</div>
+          <div class="metric-value" id="kpiExpectativa">R$ 0.00</div>
+        </div>
+        <div class="metric-card" style="text-align:center">
+          <div class="metric-label">💰 Lucro Total</div>
+          <div class="metric-value" id="kpiProfit">R$ 0.00</div>
+        </div>
+      </div>
+
       <div class="trading-panel">
         <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:16px">⚡ Registro de Trade</h3>
-        <form id="tradeForm" onsubmit="Trading.addTrade(event)" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;align-items:end">
-          <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Par</label><select id="tradePair" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"><option>EUR/USD</option><option>USD/BRL</option><option>GBP/USD</option><option>USD/JPY</option><option>AUD/USD</option><option>USD/CHF</option><option>Outro</option></select></div>
+        <form id="tradeForm" onsubmit="Trading.addTrade(event)" style="display:grid;grid-template-columns:repeat(8,1fr);gap:12px;align-items:end">
+          <div style="grid-column: span 2;"><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Par</label><select id="tradePair" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"><option>WINZ26</option><option>WDOZ26</option><option>BITV26</option><option>EUR/USD</option><option>USD/BRL</option><option>BTCUSDT</option><option>Outro</option></select></div>
           <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Direcao</label><select id="tradeDirection" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"><option value="COMPRA">📈 COMPRA</option><option value="VENDA">📉 VENDA</option></select></div>
           <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Resultado</label><select id="tradeResult" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"><option value="WIN">✅ WIN</option><option value="LOSS">❌ LOSS</option></select></div>
           <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Valor (R$)</label><input type="number" id="tradeValue" step="0.01" placeholder="0.00" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"></div>
-          <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Timeframe</label><select id="tradeTimeframe" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"><option>M1</option><option>M5</option><option>M15</option><option>M30</option><option>H1</option><option>H4</option></select></div>
-          <div><button type="submit" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--success),#00cc6a);border:none;border-radius:10px;color:white;font-weight:700;cursor:pointer">➕ Adicionar</button></div>
+          <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Confiança</label><input type="number" id="tradeConfidence" min="0" max="100" placeholder="%" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"></div>
+          <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">Stop Loss</label><input type="text" id="tradeStopLoss" placeholder="Preço" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"></div>
+          <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px">TF</label><select id="tradeTimeframe" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;color:white"><option>M1</option><option>M5</option><option>M15</option><option>M30</option><option>H1</option><option>H4</option><option>D1</option></select></div>
+          <div style="grid-column: span 8; margin-top: 8px;"><button type="submit" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--success),#00cc6a);border:none;border-radius:10px;color:white;font-weight:700;cursor:pointer">➕ Adicionar Trade</button></div>
         </form>
       </div>
 
@@ -864,9 +906,8 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
         <div style="overflow-x:auto"><table style="width:100%;font-size:.85rem;border-collapse:collapse"><thead><tr style="color:var(--muted);border-bottom:1px solid var(--border);text-align:left"><th style="padding:10px 8px">Data</th><th style="padding:10px 8px">Par</th><th style="padding:10px 8px">Dir</th><th style="padding:10px 8px">Res</th><th style="padding:10px 8px;text-align:right">Valor</th><th style="padding:10px 8px">TF</th><th style="padding:10px 8px;text-align:center">🗑️</th></tr></thead><tbody id="tradesTableBody"></tbody></table></div>
         <div id="emptyTrades" style="text-align:center;padding:40px;color:var(--muted);display:none"><div style="font-size:2rem;margin-bottom:8px">📝</div><p>Nenhum trade</p></div>
       </div>
-    </div>
-
-       <!-- DETECCOES / INTELLIGENCE -->
+       
+      <!-- DETECCOES / INTELLIGENCE -->
     <div id="detectionsPane" class="content-pane">
       <div class="stream-container">
         <div class="stream-header" style="display:flex;justify-content:space-between;align-items:center;">

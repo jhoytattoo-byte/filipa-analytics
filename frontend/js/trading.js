@@ -227,15 +227,31 @@ const Trading = {
     // ============================================================
     // TRADES
     // ============================================================
-    addTrade(e) {
+        addTrade(e) {
         e.preventDefault();
         const name = this.getUserName();
+        
+        // Pega os valores dos campos (incluindo os novos)
+        const pair = document.getElementById('tradePair').value;
+        const direction = document.getElementById('tradeDirection').value;
+        const result = document.getElementById('tradeResult').value;
+        const value = parseFloat(document.getElementById('tradeValue').value) || 0;
+        const timeframe = document.getElementById('tradeTimeframe').value;
+        
+        // 🔥 NOVOS CAMPOS DA PLANILHA INTELIGENTE
+        const confidenceInput = document.getElementById('tradeConfidence');
+        const stopLossInput = document.getElementById('tradeStopLoss');
+        const confidence = confidenceInput ? parseInt(confidenceInput.value) || 0 : 0;
+        const stopLoss = stopLossInput ? stopLossInput.value || '--' : '--';
+
         const trade = {
-            pair: document.getElementById('tradePair').value,
-            direction: document.getElementById('tradeDirection').value,
-            result: document.getElementById('tradeResult').value,
-            value: parseFloat(document.getElementById('tradeValue').value) || 0,
-            timeframe: document.getElementById('tradeTimeframe').value,
+            pair: pair,
+            direction: direction,
+            result: result,
+            value: value,
+            timeframe: timeframe,
+            confidence: confidence,
+            stop_loss: stopLoss,
             id: Date.now(),
             date: new Date().toISOString()
         };
@@ -255,6 +271,7 @@ const Trading = {
         this.renderTrades();
         this.updateStats();
         this.updateAllGreetings();
+        
         if (typeof Dashboard !== 'undefined') {
             Dashboard.updateGoals(FilipaState.getStats());
             Dashboard.updateWeeklySummary();
@@ -302,17 +319,84 @@ const Trading = {
     // ============================================================
     // STATS
     // ============================================================
-    updateStats() {
-        const stats = FilipaState.getStats();
-        this.setText('winRateDisplay', stats.winRate + '%');
-        this.setText('traderScore', stats.score);
-        this.setText('traderLevel', stats.level);
-        this.setText('streakDisplay', stats.streak);
-        this.setText('tradesCountDisplay', stats.totalTrades);
+       updateStats() {
+        const trades = FilipaState.trades; // Pega todos os trades salvos
+        
+        // Se não houver trades, zera tudo
+        if (trades.length === 0) {
+            this.setText('winRateDisplay', '0%');
+            this.setText('traderScore', '0');
+            this.setText('traderLevel', 'Iniciante');
+            this.setText('streakDisplay', '0');
+            this.setText('tradesCountDisplay', '0');
+            const profitEl = document.getElementById('totalProfitDisplay');
+            if (profitEl) { profitEl.textContent = 'R$ 0.00'; profitEl.style.color = 'var(--muted)'; }
+            
+            // Zera os KPIs novos (se existirem)
+            this.setText('kpiPayoff', '1.0');
+            this.setText('kpiExpectativa', 'R$ 0.00');
+            this.setText('kpiWinRate', '0%');
+            this.setText('kpiProfit', 'R$ 0.00');
+            return;
+        }
+
+        // 1. Cálculos Básicos (O que já existia)
+        const totalTrades = trades.length;
+        const wins = trades.filter(t => t.result === 'WIN');
+        const losses = trades.filter(t => t.result === 'LOSS');
+        const winRate = (wins.length / totalTrades) * 100;
+        
+        // 2. Cálculo de Payoff (Média de Ganho vs Média de Perda)
+        const avgWin = wins.reduce((acc, t) => acc + (t.value || 0), 0) / (wins.length || 1);
+        const avgLoss = Math.abs(losses.reduce((acc, t) => acc + (t.value || 0), 0) / (losses.length || 1));
+        const payoff = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : (avgWin > 0 ? '∞' : '0.00');
+
+        // 3. Expectativa Matemática (A fórmula de ouro)
+        // (WinRate * MediaGanho) - (LossRate * MediaPerda)
+        const lossRate = 1 - (winRate / 100);
+        const expectativa = ((winRate / 100) * avgWin) - (lossRate * avgLoss);
+        
+        // 4. Lucro Total
+        const profit = wins.reduce((acc, t) => acc + (t.value || 0), 0) + losses.reduce((acc, t) => acc + (t.value || 0), 0);
+
+        // --- ATUALIZANDO A TELA (IDs que já existem no HTML) ---
+        this.setText('winRateDisplay', winRate.toFixed(1) + '%');
+        this.setText('tradesCountDisplay', totalTrades);
+        
         const profitEl = document.getElementById('totalProfitDisplay');
-        if (profitEl) { profitEl.textContent = 'R$ ' + stats.profit.toFixed(2); profitEl.style.color = stats.profit >= 0 ? 'var(--success)' : 'var(--error)'; }
+        if (profitEl) { 
+            profitEl.textContent = 'R$ ' + profit.toFixed(2); 
+            profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--error)'; 
+        }
+
+        // --- ATUALIZANDO OS NOVOS KPIs (Planilha Inteligente) ---
+        // Se os IDs existirem no HTML, eles serão atualizados
+        this.setText('kpiWinRate', winRate.toFixed(1) + '%');
+        this.setText('kpiPayoff', payoff);
+        this.setText('kpiProfit', 'R$ ' + profit.toFixed(2));
+        
+        const expEl = document.getElementById('kpiExpectativa');
+        if (expEl) {
+            expEl.innerText = 'R$ ' + expectativa.toFixed(2);
+            expEl.style.color = expectativa > 0 ? 'var(--success)' : 'var(--error)';
+        }
+
+        // Lógica de Streak (Sequência de Wins/Losses) - Mantida
+        let streak = 0;
+        let streakType = null;
+        for (let i = 0; i < trades.length; i++) {
+            if (i === 0) {
+                streakType = trades[i].result;
+                streak = 1;
+            } else if (trades[i].result === streakType) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+        this.setText('streakDisplay', streak);
         const streakEl = document.getElementById('streakDisplay');
-        if (streakEl) { streakEl.style.color = stats.streakType === 'WIN' ? 'var(--success)' : stats.streakType === 'LOSS' ? 'var(--error)' : 'var(--muted)'; }
+        if (streakEl) { streakEl.style.color = streakType === 'WIN' ? 'var(--success)' : streakType === 'LOSS' ? 'var(--error)' : 'var(--muted)'; }
     },
 
     setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; },
