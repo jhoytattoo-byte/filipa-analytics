@@ -1,11 +1,6 @@
 // ============================================================
-// curatorShared.js — v1.2
+// curatorShared.js — v1.3 (Desbloqueio de Ativos)
 // Lógica comum de Curador para todos os mercados
-// ============================================================
-// Cada engine (B3, Forex, OTC, etc.) chama esta função passando
-// sua configuração específica (sessão, símbolos, tipo de ativo).
-//
-// Regra de ouro: DEEPSEEK PRINCIPAL (qualidade), GROQ COMO FALLBACK.
 // ============================================================
 
 const logger = require('../utils/logger');
@@ -14,8 +9,43 @@ const groqService = require('./groq');
 const prompts = require('../config/prompts');
 
 /**
- * Executa o Curador genérico.
+ * Tenta deduzir o símbolo da API caso o ativo não esteja no mapa
  */
+function deduzirSimboloAPI(ativoOriginal, marketName) {
+    if (!ativoOriginal) return null;
+    const ativo = ativoOriginal.toUpperCase().replace(/[\s\-]/g, '');
+
+    // 1. Crypto (Ex: GALAUSD -> GALAUSDT)
+    if (marketName === 'Crypto') {
+        // Remove USD, USDT, BRL do final para evitar duplicação
+        const limpo = ativo.replace(/(USD|USDT|BRL)$/, '');
+        return limpo + 'USDT';
+    }
+
+    // 2. Forex (Ex: EUR/USD -> EURUSD)
+    if (marketName === 'Forex') {
+        const limpo = ativo.replace(/\//g, '');
+        // Se tiver 6 letras, é um par válido (ex: EURUSD)
+        if (limpo.length === 6) return limpo;
+        return null;
+    }
+
+    // 3. B3 Ações (Ex: LREN3, MGLU3)
+    if (marketName === 'B3') {
+        // Se termina com número (ex: 3, 4, 11), provavelmente é ação/FII válido na Brapi
+        if (/\d+$/.test(ativo) && ativo.length <= 6) return ativo;
+        return null; // Futuros (WINV26) já estão mapeados, se não estão, não deduzimos.
+    }
+
+    // 4. Stocks (Ex: PLTR)
+    if (marketName === 'Stocks') {
+        return ativo;
+    }
+
+    // Fallback genérico para outros mercados
+    return null;
+}
+
 async function execute({
     visionData,
     requestId,
@@ -31,9 +61,17 @@ async function execute({
     // 1. Detecta sessão
     const sessao = getSessionFn ? getSessionFn() : 'Sessão padrão';
 
-    // 2. Mapeia símbolo da API
+    // 2. Mapeia símbolo da API (Tenta mapa curado primeiro)
     const symbolInfo = getSymbolFn ? getSymbolFn(visionData.ativo) : null;
-    const simboloAPI = symbolInfo ? symbolInfo.api : '';
+    let simboloAPI = symbolInfo ? symbolInfo.api : null;
+    
+    // 🚀 DESBLOQUEIO: Se não achou no mapa, tenta deduzir
+    if (!simboloAPI) {
+        simboloAPI = deduzirSimboloAPI(visionData.ativo, marketName);
+        if (simboloAPI) {
+            logger.info(`[${marketName} Curator] 🔍 Ativo não mapeado. Deduzido: ${simboloAPI}`, { requestId });
+        }
+    }
 
     // 3. Busca dados reais
     let dadosReais = null;
@@ -41,7 +79,7 @@ async function execute({
     let tendenciaMacro = 'LATERAL';
 
     if (simboloAPI) {
-        logger.info(`[${marketName} Curator] Símbolo API: ${simboloAPI} (${symbolInfo.nome || 'N/A'})`, { requestId });
+        logger.info(`[${marketName} Curator] Símbolo API: ${simboloAPI}`, { requestId });
         dadosReais = await getMarketData(visionData.ativo, simboloAPI);
 
         if (dadosReais) {
@@ -50,28 +88,24 @@ async function execute({
             if (validateDivergence) {
                 const precoVision = parseFloat(visionData.preco_atual);
                 if (precoVision && dadosReais.preco_real) {
-                    // 🔥 FIX: divergência em PERCENTUAL (não absoluto)
                     const divergenciaPercent = Math.abs((precoVision - dadosReais.preco_real) / dadosReais.preco_real) * 100;
-
+                    
                     if (divergenciaPercent > divergenceThreshold) {
                         ancoragemValida = false;
-                        logger.warn(`[${marketName} Curator] ⚠️ Divergência de ${divergenciaPercent.toFixed(2)}% detectada (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
-                    } else {
-                        logger.info(`[${marketName} Curator] ✅ Divergência OK: ${divergenciaPercent.toFixed(2)}% (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
+                        logger.warn(`[${marketName} Curator] ⚠️ Divergência de ${divergenciaPercent.toFixed(2)}% (${precoVision} vs ${dadosReais.preco_real})`, { requestId });
                     }
                 }
-            } else {
-                logger.info(`[${marketName} Curator] ℹ️ Validação cruzada desativada para este mercado`, { requestId });
             }
+        } else {
+            logger.warn(`[${marketName} Curator] ⚠️ Dedução (${simboloAPI}) falhou na API.`, { requestId });
         }
     } else {
-        logger.warn(`[${marketName} Curator] Ativo não mapeado: ${visionData.ativo}`, { requestId });
+        logger.warn(`[${marketName} Curator] ⚠️ Ativo não mapeado e sem dedução: ${visionData.ativo}`, { requestId });
     }
 
     // 4. Chama IA (DeepSeek principal via groqService.text)
     let contextoIA = '';
     try {
-        // 🔥 Monta prompt dinâmico com contexto
         const promptDinamico = `${prompts.curador}
 
 DADOS ATUAIS DO MERCADO:
@@ -80,17 +114,12 @@ DADOS ATUAIS DO MERCADO:
 - Preço atual: ${visionData.preco_atual || 'N/A'}
 - RSI: ${visionData.rsi || 'N/A'}
 - Tendência visual: ${visionData.tendencia || 'N/A'}
-- Dados reais de mercado: ${dadosReais ? `preço real = ${dadosReais.preco_real}, tendência = ${dadosReais.tendencia_macro}` : 'indisponível'}
+- Dados reais de mercado: ${dadosReais ? `preço real = ${dadosReais.preco_real}, tendência = ${dadosReais.tendencia_macro}` : 'indisponível (Ativo não mapeado na API)'}
 
 Responda APENAS o JSON. Sem markdown, sem explicações.`;
 
-        // 🔥 FIX: removido o modelo hardcoded 'qwen/qwen3.8-27b'
         const resposta = await groqService.text(promptDinamico);
-
-        // 🔍 DEBUG: mostra o que o modelo respondeu
-        logger.info(`[${marketName} Curator] 🔍 Resposta bruta (200 chars): ${(resposta || '').substring(0, 200)}`, { requestId });
-
-        // Parse robusto (aceita markdown ```json ... ```)
+        
         let textoLimpo = (resposta || '').trim();
         const jsonMatch = textoLimpo.match(/{[\s\S]*}/);
         if (jsonMatch) textoLimpo = jsonMatch[0];
@@ -98,18 +127,16 @@ Responda APENAS o JSON. Sem markdown, sem explicações.`;
         const parsed = JSON.parse(textoLimpo);
         contextoIA = parsed.opiniao || '';
 
-        // ✅ LOG explícito: avisa se o modelo não retornou "opiniao"
         if (!contextoIA) {
-            logger.warn(`[${marketName} Curator] ⚠️ Modelo retornou JSON sem campo "opiniao". Chaves: ${Object.keys(parsed).join(', ')}`, { requestId });
+            logger.warn(`[${marketName} Curator] ⚠️ Modelo retornou JSON sem campo "opiniao".`, { requestId });
         } else {
-            logger.info(`[${marketName} Curator] ✅ IA gerou contexto: "${contextoIA.substring(0, 100)}..."`, { requestId });
+            logger.info(`[${marketName} Curator] ✅ IA gerou contexto.`, { requestId });
         }
     } catch (e) {
         logger.warn(`[${marketName} Curator] ⚠️ IA falhou: ${e.message}`, { requestId });
         contextoIA = '';
     }
 
-    // 5. Retorna contexto consolidado
     return {
         regime: tendenciaMacro,
         volatilidade: dadosReais?.volatilidade || 'NORMAL',
