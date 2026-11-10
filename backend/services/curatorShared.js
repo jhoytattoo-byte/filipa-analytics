@@ -1,5 +1,5 @@
 // ============================================================
-// curatorShared.js — v1.3 (Desbloqueio de Ativos)
+// curatorShared.js — v1.4 (Desbloqueio de Ativos + CME)
 // Lógica comum de Curador para todos os mercados
 // ============================================================
 
@@ -17,7 +17,6 @@ function deduzirSimboloAPI(ativoOriginal, marketName) {
 
     // 1. Crypto (Ex: GALAUSD -> GALAUSDT)
     if (marketName === 'Crypto') {
-        // Remove USD, USDT, BRL do final para evitar duplicação
         const limpo = ativo.replace(/(USD|USDT|BRL)$/, '');
         return limpo + 'USDT';
     }
@@ -25,16 +24,14 @@ function deduzirSimboloAPI(ativoOriginal, marketName) {
     // 2. Forex (Ex: EUR/USD -> EURUSD)
     if (marketName === 'Forex') {
         const limpo = ativo.replace(/\//g, '');
-        // Se tiver 6 letras, é um par válido (ex: EURUSD)
         if (limpo.length === 6) return limpo;
         return null;
     }
 
     // 3. B3 Ações (Ex: LREN3, MGLU3)
     if (marketName === 'B3') {
-        // Se termina com número (ex: 3, 4, 11), provavelmente é ação/FII válido na Brapi
         if (/\d+$/.test(ativo) && ativo.length <= 6) return ativo;
-        return null; // Futuros (WINV26) já estão mapeados, se não estão, não deduzimos.
+        return null;
     }
 
     // 4. Stocks (Ex: PLTR)
@@ -42,7 +39,38 @@ function deduzirSimboloAPI(ativoOriginal, marketName) {
         return ativo;
     }
 
-    // Fallback genérico para outros mercados
+    // 5. Índices / CME (Ex: MNQZ6, MESZ6, MGCZ6)
+    if (marketName === 'Indices') {
+        // Remove o sufixo de vencimento (ex: Z6, M6, U6, Z26)
+        const limpo = ativo.replace(/([FGHJKMNQUVXZ]\d{1,2})$/i, '');
+        
+        const mapaCME = {
+            'MNQ': '^NDX',   // Micro Nasdaq -> Nasdaq 100
+            'NQ':  '^NDX',   // E-mini Nasdaq
+            'MES': '^GSPC',  // Micro S&P 500 -> S&P 500
+            'ES':  '^GSPC',  // E-mini S&P 500
+            'M2K': '^RUT',   // Micro Russell 2000
+            'MYM': '^DJI',   // Micro Dow Jones
+            'MGC': 'GC=F',   // Micro Ouro -> Futuro do Ouro
+            'GC':  'GC=F',   // Ouro
+            'MCL': 'CL=F',   // Micro Petróleo -> Futuro do WTI
+            'CL':  'CL=F',   // Petróleo WTI
+            'XAL': 'AAPL',   // Apple Futuro
+            'XMST': 'MSFT',  // Microsoft Futuro
+            'XTLS': 'TSLA',  // Tesla Futuro
+            'XNVDA': 'NVDA', // Nvidia Futuro
+            'XMZN': 'AMZN'   // Amazon Futuro
+        };
+
+        if (mapaCME[limpo]) {
+            logger.info(`[${marketName} Curator] 🔍 Deduzido CME: ${limpo} -> ${mapaCME[limpo]}`);
+            return mapaCME[limpo];
+        }
+        
+        // Se não estiver no mapa, tenta o ticker limpo (ex: NNQ -> NNQ)
+        return limpo; 
+    }
+
     return null;
 }
 
@@ -58,14 +86,11 @@ async function execute({
 }) {
     logger.info(`[${marketName} Curator] Iniciando contexto`, { requestId });
 
-    // 1. Detecta sessão
     const sessao = getSessionFn ? getSessionFn() : 'Sessão padrão';
 
-    // 2. Mapeia símbolo da API (Tenta mapa curado primeiro)
     const symbolInfo = getSymbolFn ? getSymbolFn(visionData.ativo) : null;
     let simboloAPI = symbolInfo ? symbolInfo.api : null;
     
-    // 🚀 DESBLOQUEIO: Se não achou no mapa, tenta deduzir
     if (!simboloAPI) {
         simboloAPI = deduzirSimboloAPI(visionData.ativo, marketName);
         if (simboloAPI) {
@@ -73,7 +98,6 @@ async function execute({
         }
     }
 
-    // 3. Busca dados reais
     let dadosReais = null;
     let ancoragemValida = true;
     let tendenciaMacro = 'LATERAL';
@@ -103,7 +127,6 @@ async function execute({
         logger.warn(`[${marketName} Curator] ⚠️ Ativo não mapeado e sem dedução: ${visionData.ativo}`, { requestId });
     }
 
-    // 4. Chama IA (DeepSeek principal via groqService.text)
     let contextoIA = '';
     try {
         const promptDinamico = `${prompts.curador}
