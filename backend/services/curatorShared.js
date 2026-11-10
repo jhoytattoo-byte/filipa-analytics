@@ -39,21 +39,30 @@ function deduzirSimboloAPI(ativoOriginal, marketName) {
         return ativo;
     }
 
-    // 5. Índices / CME (Ex: MNQZ6, MESZ6, MGCZ6)
+    // 5. Índices / CME (Ex: MNQZ6, MNQ26, MESZ6)
     if (marketName === 'Indices') {
-        // Remove o sufixo de vencimento (ex: Z6, M6, U6, Z26)
-        const limpo = ativo.replace(/([FGHJKMNQUVXZ]\d{1,2})$/i, '');
-        
+        // 1º Passo: Remove o sufixo de vencimento (Z6, M6, 26, Z26, etc.)
+        // A regex tenta remover qualquer coisa que pareça um mês + ano ou só números no final
+        let limpo = ativo.replace(/([FGHJKMNQUVXZ])\d{1,2}$/i, ''); // Remove Z6, M26
+        if (limpo === ativo) {
+            // Se não removeu, tenta remover apenas números do final (ex: 26)
+            limpo = ativo.replace(/\d{1,2}$/, '');
+        }
+        if (limpo === ativo) {
+            // Se ainda não removeu, tenta remover apenas a letra do mês (ex: Z)
+            limpo = ativo.replace(/[FGHJKMNQUVXZ]$/i, '');
+        }
+
         const mapaCME = {
-            'MNQ': '^NDX',   // Micro Nasdaq -> Nasdaq 100
+            'MNQ': '^NDX',   // Micro Nasdaq
             'NQ':  '^NDX',   // E-mini Nasdaq
-            'MES': '^GSPC',  // Micro S&P 500 -> S&P 500
+            'MES': '^GSPC',  // Micro S&P 500
             'ES':  '^GSPC',  // E-mini S&P 500
             'M2K': '^RUT',   // Micro Russell 2000
             'MYM': '^DJI',   // Micro Dow Jones
-            'MGC': 'GC=F',   // Micro Ouro -> Futuro do Ouro
+            'MGC': 'GC=F',   // Micro Ouro
             'GC':  'GC=F',   // Ouro
-            'MCL': 'CL=F',   // Micro Petróleo -> Futuro do WTI
+            'MCL': 'CL=F',   // Micro Petróleo
             'CL':  'CL=F',   // Petróleo WTI
             'XAL': 'AAPL',   // Apple Futuro
             'XMST': 'MSFT',  // Microsoft Futuro
