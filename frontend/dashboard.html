@@ -885,8 +885,9 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
       <div class="trading-panel">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:1.1rem;font-weight:700">📋 Historico</h3><div style="display:flex;gap:6px"><button onclick="Trading.filterTrades('all')" style="padding:6px 14px;border-radius:8px;background:var(--primary);border:none;color:white;font-size:.8rem;cursor:pointer">Todos</button><button onclick="Trading.filterTrades('win')" style="padding:6px 14px;border-radius:8px;background:rgba(0,255,136,.15);border:1px solid rgba(0,255,136,.3);color:var(--success);font-size:.8rem;cursor:pointer">WIN</button><button onclick="Trading.filterTrades('loss')" style="padding:6px 14px;border-radius:8px;background:rgba(255,68,68,.15);border:1px solid rgba(255,68,68,.3);color:var(--error);font-size:.8rem;cursor:pointer">LOSS</button></div></div>
         <div style="overflow-x:auto"><table style="width:100%;font-size:.85rem;border-collapse:collapse"><thead><tr style="color:var(--muted);border-bottom:1px solid var(--border);text-align:left"><th style="padding:10px 8px">Data</th><th style="padding:10px 8px">Par</th><th style="padding:10px 8px">Dir</th><th style="padding:10px 8px">Res</th><th style="padding:10px 8px;text-align:right">Valor</th><th style="padding:10px 8px">TF</th><th style="padding:10px 8px;text-align:center">🗑️</th></tr></thead><tbody id="tradesTableBody"></tbody></table></div>
-        <div id="emptyTrades" style="text-align:center;padding:40px;color:var(--muted);display:none"><div style="font-size:2rem;margin-bottom:8px">📝</div><p>Nenhum trade</p></div>
+           <div id="emptyTrades" style="text-align:center;padding:40px;color:var(--muted);display:none"><div style="font-size:2rem;margin-bottom:8px">📝</div><p>Nenhum trade</p></div>
       </div>
+    </div> <!-- 🔥 FECHA A ABA TRADING (tradingPane) -->
        
       <!-- DETECCOES / INTELLIGENCE -->
     <div id="detectionsPane" class="content-pane">
