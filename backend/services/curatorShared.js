@@ -13,44 +13,44 @@ const prompts = require('../config/prompts');
  */
 function deduzirSimboloAPI(ativoOriginal, marketName) {
     if (!ativoOriginal) return null;
+    // Limpa espaços, hifens e converte para maiúsculo
     const ativo = ativoOriginal.toUpperCase().replace(/[\s\-]/g, '');
 
-    // 1. Crypto (Ex: GALAUSD -> GALAUSDT)
+    // 1. Crypto
     if (marketName === 'Crypto') {
         const limpo = ativo.replace(/(USD|USDT|BRL)$/, '');
         return limpo + 'USDT';
     }
 
-    // 2. Forex (Ex: EUR/USD -> EURUSD)
+    // 2. Forex
     if (marketName === 'Forex') {
         const limpo = ativo.replace(/\//g, '');
         if (limpo.length === 6) return limpo;
         return null;
     }
 
-    // 3. B3 Ações (Ex: LREN3, MGLU3)
+    // 3. B3
     if (marketName === 'B3') {
         if (/\d+$/.test(ativo) && ativo.length <= 6) return ativo;
         return null;
     }
 
-    // 4. Stocks (Ex: PLTR)
+    // 4. Stocks
     if (marketName === 'Stocks') {
         return ativo;
     }
 
-    // 5. Índices / CME (Ex: MNQZ6, MNQ26, MESZ6)
+    // 5. Índices / CME
     if (marketName === 'Indices') {
-        // 1º Passo: Remove o sufixo de vencimento (Z6, M6, 26, Z26, etc.)
-        // A regex tenta remover qualquer coisa que pareça um mês + ano ou só números no final
-        let limpo = ativo.replace(/([FGHJKMNQUVXZ])\d{1,2}$/i, ''); // Remove Z6, M26
-        if (limpo === ativo) {
-            // Se não removeu, tenta remover apenas números do final (ex: 26)
-            limpo = ativo.replace(/\d{1,2}$/, '');
-        }
-        if (limpo === ativo) {
-            // Se ainda não removeu, tenta remover apenas a letra do mês (ex: Z)
-            limpo = ativo.replace(/[FGHJKMNQUVXZ]$/i, '');
+        // Lista de possíveis sufixos de vencimento (Z6, 26, Z26, M6, etc)
+        const sufixos = ['Z26', 'M26', 'H26', 'U26', 'Z6', 'M6', 'H6', 'U6', '26'];
+        let limpo = ativo;
+        
+        for (const suf of sufixos) {
+            if (limpo.endsWith(suf)) {
+                limpo = limpo.slice(0, -suf.length);
+                break;
+            }
         }
 
         const mapaCME = {
@@ -76,7 +76,6 @@ function deduzirSimboloAPI(ativoOriginal, marketName) {
             return mapaCME[limpo];
         }
         
-        // Se não estiver no mapa, tenta o ticker limpo (ex: NNQ -> NNQ)
         return limpo; 
     }
 
