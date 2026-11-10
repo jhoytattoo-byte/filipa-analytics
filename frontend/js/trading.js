@@ -1,6 +1,5 @@
 // ============================================================
-// TRADING v7.1 - Filipa Coach com Conexao Emocional Completa
-// CORRIGIDO: Todas as funções de saudação foram adicionadas
+// TRADING v7.2 - Filipa Coach + Persistência no Supabase
 // ============================================================
 
 const Trading = {
@@ -13,15 +12,108 @@ const Trading = {
     init() {
         this.ensureUser();
         this.updateAllGreetings();
-        this.renderTrades();
-        this.updateStats();
+        this.carregarTradesDoBanco(); // 🔥 NOVO: Carrega os trades salvos
         this.updateMoodUI();
         this.startLiveGreeting();
-        console.log('[Trading] v7.1 inicializado - conexao emocional ativa');
+        console.log('[Trading] v7.2 inicializado - persistência ativa');
     },
 
     // ============================================================
-    // SAUDAÇÕES (Corrigido: Funções adicionadas)
+    // PERSISTÊNCIA NO SUPABASE
+    // ============================================================
+    async carregarTradesDoBanco() {
+        if (!window.supabaseClient) return;
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await window.supabaseClient
+                .from('trades')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                // Converte os dados do banco para o formato do FilipaState
+                const tradesFormatados = data.map(t => ({
+                    id: t.id,
+                    date: t.created_at,
+                    pair: t.pair,
+                    direction: t.direction,
+                    result: t.result,
+                    value: t.value,
+                    timeframe: t.timeframe,
+                    confidence: t.confidence,
+                    stop_loss: t.stop_loss,
+                    take_profit: t.take_profit
+                }));
+
+                FilipaState.trades = tradesFormatados;
+                this.renderTrades();
+                this.updateStats();
+                console.log(`[Trading] ✅ ${tradesFormatados.length} trades carregados do Supabase.`);
+            } else {
+                // Se o banco estiver vazio, mas o localStorage tiver dados (migração)
+                this.renderTrades();
+                this.updateStats();
+            }
+        } catch (e) {
+            console.error('[Trading] Erro ao carregar trades do Supabase:', e.message);
+            // Fallback: tenta carregar do localStorage
+            this.renderTrades();
+            this.updateStats();
+        }
+    },
+
+    async salvarTradeNoBanco(trade) {
+        if (!window.supabaseClient) return;
+        try {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) {
+                console.warn('[Trading] Usuário não logado. Trade não foi salvo no banco.');
+                return;
+            }
+
+            const { error } = await window.supabaseClient
+                .from('trades')
+                .insert({
+                    user_id: user.id,
+                    pair: trade.pair,
+                    direction: trade.direction,
+                    result: trade.result || null,
+                    value: trade.value || 0,
+                    timeframe: trade.timeframe,
+                    confidence: trade.confidence || 0,
+                    stop_loss: trade.stop_loss || null,
+                    take_profit: trade.take_profit || null,
+                    created_at: trade.date || new Date().toISOString()
+                });
+
+            if (error) throw error;
+            console.log('[Trading] ✅ Trade salvo no Supabase:', trade.pair);
+        } catch (e) {
+            console.error('[Trading] Erro ao salvar trade no Supabase:', e.message);
+        }
+    },
+
+    async deletarTradeNoBanco(id) {
+        if (!window.supabaseClient) return;
+        try {
+            const { error } = await window.supabaseClient
+                .from('trades')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            console.log('[Trading] ✅ Trade deletado do Supabase.');
+        } catch (e) {
+            console.error('[Trading] Erro ao deletar trade no Supabase:', e.message);
+        }
+    },
+
+    // ============================================================
+    // SAUDAÇÕES
     // ============================================================
     updateAllGreetings() {
         this.updateGreeting();
@@ -69,11 +161,11 @@ const Trading = {
         if (this.greetingTimer) clearInterval(this.greetingTimer);
         this.greetingTimer = setInterval(() => {
             this.updateAllGreetings();
-        }, 60000); // Atualiza a cada 60 segundos
+        }, 60000);
     },
 
     // ============================================================
-    // PERSONALIDADE DA FILIPA - Banco de frases emocional
+    // PERSONALIDADE DA FILIPA
     // ============================================================
     coach: {
         greetings: {
@@ -227,18 +319,16 @@ const Trading = {
     // ============================================================
     // TRADES
     // ============================================================
-        addTrade(e) {
+    addTrade(e) {
         e.preventDefault();
         const name = this.getUserName();
         
-        // Pega os valores dos campos (incluindo os novos)
         const pair = document.getElementById('tradePair').value;
         const direction = document.getElementById('tradeDirection').value;
         const result = document.getElementById('tradeResult').value;
         const value = parseFloat(document.getElementById('tradeValue').value) || 0;
         const timeframe = document.getElementById('tradeTimeframe').value;
         
-        // 🔥 NOVOS CAMPOS DA PLANILHA INTELIGENTE
         const confidenceInput = document.getElementById('tradeConfidence');
         const stopLossInput = document.getElementById('tradeStopLoss');
         const confidence = confidenceInput ? parseInt(confidenceInput.value) || 0 : 0;
@@ -259,6 +349,9 @@ const Trading = {
         const trades = FilipaState.trades;
         trades.unshift(trade);
         FilipaState.trades = trades;
+
+        // 🔥 SALVA NO SUPABASE
+        this.salvarTradeNoBanco(trade);
 
         if (trade.result === 'WIN') {
             this.showToast(this.coach.getWinMsg(name), 'success');
@@ -283,6 +376,10 @@ const Trading = {
             let trades = FilipaState.trades;
             trades = trades.filter(t => t.id !== id);
             FilipaState.trades = trades;
+            
+            // 🔥 DELETA DO SUPABASE
+            this.deletarTradeNoBanco(id);
+            
             this.renderTrades();
             this.updateStats();
             this.updateAllGreetings();
@@ -319,10 +416,9 @@ const Trading = {
     // ============================================================
     // STATS
     // ============================================================
-       updateStats() {
-        const trades = FilipaState.trades; // Pega todos os trades salvos
+    updateStats() {
+        const trades = FilipaState.trades;
         
-        // Se não houver trades, zera tudo
         if (trades.length === 0) {
             this.setText('winRateDisplay', '0%');
             this.setText('traderScore', '0');
@@ -332,7 +428,6 @@ const Trading = {
             const profitEl = document.getElementById('totalProfitDisplay');
             if (profitEl) { profitEl.textContent = 'R$ 0.00'; profitEl.style.color = 'var(--muted)'; }
             
-            // Zera os KPIs novos (se existirem)
             this.setText('kpiPayoff', '1.0');
             this.setText('kpiExpectativa', 'R$ 0.00');
             this.setText('kpiWinRate', '0%');
@@ -340,26 +435,20 @@ const Trading = {
             return;
         }
 
-        // 1. Cálculos Básicos (O que já existia)
         const totalTrades = trades.length;
         const wins = trades.filter(t => t.result === 'WIN');
         const losses = trades.filter(t => t.result === 'LOSS');
         const winRate = (wins.length / totalTrades) * 100;
         
-        // 2. Cálculo de Payoff (Média de Ganho vs Média de Perda)
         const avgWin = wins.reduce((acc, t) => acc + (t.value || 0), 0) / (wins.length || 1);
         const avgLoss = Math.abs(losses.reduce((acc, t) => acc + (t.value || 0), 0) / (losses.length || 1));
         const payoff = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : (avgWin > 0 ? '∞' : '0.00');
 
-        // 3. Expectativa Matemática (A fórmula de ouro)
-        // (WinRate * MediaGanho) - (LossRate * MediaPerda)
         const lossRate = 1 - (winRate / 100);
         const expectativa = ((winRate / 100) * avgWin) - (lossRate * avgLoss);
         
-        // 4. Lucro Total
         const profit = wins.reduce((acc, t) => acc + (t.value || 0), 0) + losses.reduce((acc, t) => acc + (t.value || 0), 0);
 
-        // --- ATUALIZANDO A TELA (IDs que já existem no HTML) ---
         this.setText('winRateDisplay', winRate.toFixed(1) + '%');
         this.setText('tradesCountDisplay', totalTrades);
         
@@ -369,8 +458,6 @@ const Trading = {
             profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--error)'; 
         }
 
-        // --- ATUALIZANDO OS NOVOS KPIs (Planilha Inteligente) ---
-        // Se os IDs existirem no HTML, eles serão atualizados
         this.setText('kpiWinRate', winRate.toFixed(1) + '%');
         this.setText('kpiPayoff', payoff);
         this.setText('kpiProfit', 'R$ ' + profit.toFixed(2));
@@ -381,7 +468,6 @@ const Trading = {
             expEl.style.color = expectativa > 0 ? 'var(--success)' : 'var(--error)';
         }
 
-        // Lógica de Streak (Sequência de Wins/Losses) - Mantida
         let streak = 0;
         let streakType = null;
         for (let i = 0; i < trades.length; i++) {
